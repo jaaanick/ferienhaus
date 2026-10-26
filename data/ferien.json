@@ -47,7 +47,8 @@
      "name": "Mangesh",
      "weight": 1,
      "child": false,
-     "hue": 22
+     "hue": 22,
+     "dogs": 1
     },
     {
      "id": "100njp9",
@@ -117,5 +118,5 @@
    "round5": true
   }
  ],
- "updated": "2026-10-26T15:52:49.846Z"
+ "updated": "2026-10-26T15:52:53.049Z"
 }
