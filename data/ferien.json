@@ -5,7 +5,7 @@
    "name": "Alp Eisten",
    "ort": "Ramersberg",
    "start": "2026-11-12",
-   "end": "2026-12-15",
+   "end": "2026-11-15",
    "rooms": [
     {
      "id": "c5vzjja",
@@ -55,5 +55,5 @@
    "round5": true
   }
  ],
- "updated": "2026-10-26T15:11:20.786Z"
+ "updated": "2026-10-26T15:11:36.157Z"
 }
