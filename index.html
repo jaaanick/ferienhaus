@@ -276,7 +276,7 @@ const dogs=p=>Math.max(0,parseInt(p&&p.dogs)||0);
 const wt=p=>typeof p.weight==="number"&&p.weight>=0?p.weight:1;
 
 const CATS={unterkunft:"Unterkunft",neben:"Nebenkosten",einkauf:"Einkauf",aktiv:"Aktivität",sonst:"Sonstiges"};
-const UNITS={total:"Pauschal",nacht:"pro Nacht",woche:"pro Woche",ppn:"pro Person & Nacht",staffel:"Staffelpreis pro Nacht",hund_nacht:"pro Hund & Nacht",hund_total:"pro Hund pauschal"};
+const UNITS={total:"Pauschal",nacht:"pro Nacht",woche:"pro Woche",ppn:"pro Person & Nacht",staffel:"Staffelpreis pro Nacht"};
 const isDogUnit=u=>u==="hund_nacht"||u==="hund_total";
 const RANGED=u=>u!=="total"&&u!=="hund_total";
 const MODES={naechte:"nach Nächten",gleich:"gleichmässig",anwesend:"Anwesende am Datum",prozent:"prozentual"};
@@ -312,7 +312,7 @@ function dogParts(t,c){
 /* Staffelpreis: Grundpreis für «incl» Personen, Zuschlag pro weitere Person, Kindertarif.
    Pro Nacht: Kinder zahlen ihren Tarif, Erwachsene teilen Grundpreis + Zuschläge. */
 function staffel(t,c){
-  const base=toRp(c.amount), extra=toRp(c.extra), kid=toRp(c.kid), incl=Math.max(0,parseInt(c.incl)||0);
+  const base=toRp(c.amount), extra=toRp(c.extra), kid=0, incl=Math.max(0,parseInt(c.incl)||0);
   const ids=participants(t,c), [f,to]=costRange(t,c), parts={}; let total=0;
   for(const id of ids)parts[id]=0;
   for(const n of nights(f,to)){
@@ -360,9 +360,22 @@ function shares(t,c){
   if(!parts)return {total,parts:null,err:c.mode==="anwesend"?"Am Datum ist niemand anwesend":c.mode==="naechte"?"Beteiligte haben keine Nächte im Zeitraum":"Niemand beteiligt"};
   return {total,parts,err:null};
 }
+/* Zuschläge (Kind/Hund) hängen an der Person: Tarife pro Ferien, Betrag pro Person automatisch */
+const FEE_KEYS=["kidNight","dogNight","dogFlat"];
+const hasFees=t=>FEE_KEYS.some(k=>toRp((t.fees||{})[k])>0);
+function personFee(t,p){
+  const f=t.fees||{}, n=personNights(t,p.id).size, d=dogs(p), o={kid:0,dog:0,txt:[]};
+  if(isKid(p)&&toRp(f.kidNight)>0&&n){o.kid=toRp(f.kidNight)*n;o.txt.push(`Kind ${n} N. × ${chf(toRp(f.kidNight))}`)}
+  if(d&&toRp(f.dogNight)>0&&n){o.dog+=toRp(f.dogNight)*n*d;o.txt.push(`Hund ${d>1?d+" × ":""}${n} N. × ${chf(toRp(f.dogNight))}`)}
+  if(d&&toRp(f.dogFlat)>0){o.dog+=toRp(f.dogFlat)*d;o.txt.push(`Hund ${d>1?d+" × ":""}pauschal ${chf(toRp(f.dogFlat))}`)}
+  o.total=o.kid+o.dog; return o;
+}
 function ledger(t){
-  const L={}; for(const p of t.people)L[p.id]={paid:0,owed:0,sent:0,recv:0,nights:personNights(t,p.id).size};
-  let total=0, open=0; const problems=[];
+  const L={}; for(const p of t.people)L[p.id]={paid:0,owed:0,sent:0,recv:0,fee:0,nights:personNights(t,p.id).size};
+  let total=0, open=0, fees=0; const problems=[];
+  const fp=(t.fees||{}).paidBy;
+  for(const p of t.people){const f=personFee(t,p).total;if(!f)continue;L[p.id].fee=f;fees+=f;total+=f;
+    if(fp&&L[fp]){L[fp].paid+=f;L[p.id].owed+=f}else open+=f}
   for(const c of t.costs){
     const s=shares(t,c); total+=s.total;
     if(s.err){problems.push({c,msg:s.err});continue}
@@ -372,7 +385,7 @@ function ledger(t){
   }
   for(const z of t.payments){const a=toRp(z.amount);if(L[z.from])L[z.from].sent+=a;if(L[z.to])L[z.to].recv+=a}
   for(const id in L){const x=L[id];x.bal=x.paid-x.owed+x.sent-x.recv}
-  return {L,total,open,problems};
+  return {L,total,open,fees,problems};
 }
 function roundTo5(bal){                   // Salden auf 5 Rappen, Summe bleibt 0; Reste unter 10 Rp. gelten als ausgeglichen
   bal={...bal}; let rest=0;
@@ -495,12 +508,14 @@ function secPeople(t,lg){
   const rows=t.people.map(p=>{
     const st=t.stays.filter(s=>s.personId===p.id).sort((a,b)=>a.from<b.from?-1:1);
     const desc=st.length?st.map(s=>`${range(s.from,s.to)} · ${esc(R(t,s.roomId)?.name||"ohne Zimmer")}`).join("<br>"):`<span class="mut">kein Aufenthalt</span>`;
-    return `<tr class="click" data-person="${p.id}"><td class="nw">${pdot(t,p.id)}${isKid(p)?` <span class="pill">Kind</span>`:""}${dogs(p)?` <span class="pill">🐕 ${dogs(p)} Hund${dogs(p)>1?"e":""}</span>`:""}${wt(p)!==1?` <span class="pill">×${String(wt(p)).replace(".",",")}</span>`:""}</td><td>${desc}</td><td class="num">${lg.L[p.id].nights}</td></tr>`;
+    const fe=personFee(t,p);
+    return `<tr class="click" data-person="${p.id}"><td class="nw">${pdot(t,p.id)}${isKid(p)?` <span class="pill">Kind</span>`:""}${dogs(p)?` <span class="pill">🐕 ${dogs(p)} Hund${dogs(p)>1?"e":""}</span>`:""}${wt(p)!==1?` <span class="pill">×${String(wt(p)).replace(".",",")}</span>`:""}</td><td>${desc}</td><td class="num">${lg.L[p.id].nights}</td>${hasFees(t)?`<td class="num">${fe.total?chf(fe.total)+`<span class="meta">${fe.txt.join(" · ")}</span>`:"–"}</td>`:""}</tr>`;
   }).join("");
   return `<section class="section" id="sPersonen">
-    <div class="shead"><h2>Personen</h2><div class="tools edit"><button class="btn sm" id="addPerson">＋ Person</button></div></div>
-    <div class="tablewrap"><table><thead><tr><th>Name</th><th>Aufenthalt · Zimmer</th><th class="num">Nächte</th></tr></thead>
-    <tbody>${rows||`<tr><td colspan="3" class="empty">Noch niemand eingetragen.</td></tr>`}</tbody></table></div>
+    <div class="shead"><h2>Personen</h2><div class="tools edit"><button class="btn ghost sm" id="feeBtn">Zuschläge Kind/Hund</button><button class="btn sm" id="addPerson">＋ Person</button></div></div>
+    <div class="tablewrap"><table><thead><tr><th>Name</th><th>Aufenthalt · Zimmer</th><th class="num">Nächte</th>${hasFees(t)?`<th class="num">Zuschläge CHF</th>`:""}</tr></thead>
+    <tbody>${rows||`<tr><td colspan="4" class="empty">Noch niemand eingetragen.</td></tr>`}</tbody></table></div>
+    ${hasFees(t)?`<p class="hint">Zuschläge: ${[toRp(t.fees.kidNight)?`Kind ${chf(toRp(t.fees.kidNight))}/Nacht`:"",toRp(t.fees.dogNight)?`Hund ${chf(toRp(t.fees.dogNight))}/Nacht`:"",toRp(t.fees.dogFlat)?`Hund ${chf(toRp(t.fees.dogFlat))} pauschal`:""].filter(Boolean).join(" · ")} · bezahlt von ${t.fees.paidBy&&P(t,t.fees.paidBy)?esc(pname(t,t.fees.paidBy)):`<span class="pill warn">noch offen</span>`}. Werden automatisch der jeweiligen Person belastet.</p>`:""}
     <p class="hint">Gewichtung (z.B. Kind ×0,5) wirkt bei den Aufteilungen «nach Nächten», «gleichmässig» und «Anwesende».</p>
   </section>`;
 }
@@ -514,12 +529,13 @@ function splitDesc(t,c){
   return s;
 }
 function secCosts(t){
+  const feeSum=t.people.reduce((a,p)=>a+personFee(t,p).total,0);
   const cs=[...t.costs].sort((a,b)=>(Object.keys(CATS).indexOf(a.cat)-Object.keys(CATS).indexOf(b.cat))||((a.date||"")<(b.date||"")?-1:1));
   let sum=0;
   const rows=cs.map(c=>{
     const s=shares(t,c); sum+=s.total; const [f,to]=costRange(t,c);
     const unit=isDogUnit(c.unit)?`${chf(toRp(c.amount))} ${UNITS[c.unit]} · ${participants(t,c).reduce((n,id)=>n+dogs(P(t,id)),0)} Hund(e)`
-      :c.unit==="staffel"?`${chf(toRp(c.amount))}/Nacht für ${parseInt(c.incl)||0} P. · +${chf(toRp(c.extra))} weitere P. · Kind ${chf(toRp(c.kid))} · ${diff(f,to)} N.`
+      :c.unit==="staffel"?`${chf(toRp(c.amount))}/Nacht für ${parseInt(c.incl)||0} P. · +${chf(toRp(c.extra))} weitere P. · ${diff(f,to)} N.`
       :c.unit&&c.unit!=="total"?`${chf(toRp(c.amount))} ${UNITS[c.unit]} · ${diff(f,to)} N.`:"";
     return `<tr class="click" data-cost="${c.id}">
       <td><b>${esc(c.title)}</b><span class="meta">${CATS[c.cat]||""}${c.date?` · ${fd(c.date)}`:""}${unit?` · ${unit}`:""}</span></td>
@@ -534,15 +550,14 @@ function secCosts(t){
       <button class="chip" data-pre="miete_w">Miete pro Woche</button>
       <button class="chip" data-pre="miete_t">Miete pauschal</button>
       <button class="chip" data-pre="miete_s">Miete Staffelpreis</button>
-      <button class="chip" data-pre="hund_n">🐕 Hund pro Nacht</button>
-      <button class="chip" data-pre="hund_t">🐕 Hund pauschal</button>
+
       <button class="chip" data-pre="reinigung">Schlussreinigung</button>
       <button class="chip" data-pre="kurtaxe">Kurtaxe</button>
       <button class="chip" data-pre="einkauf">Einkauf</button>
     </div>
     <div class="tablewrap"><table><thead><tr><th>Bezeichnung</th><th>Bezahlt von</th><th>Aufteilung</th><th class="num">CHF</th></tr></thead>
     <tbody>${rows||`<tr><td colspan="4" class="empty">Noch keine Kosten erfasst.</td></tr>`}</tbody>
-    ${rows?`<tfoot><tr><td colspan="3">Total</td><td class="num">${chf(sum)}</td></tr></tfoot>`:""}</table></div>
+    ${rows||feeSum?`<tfoot>${feeSum?`<tr><td colspan="3" style="font-weight:400;border-top:0" class="mut">Zuschläge Kind/Hund (bei den Personen)</td><td class="num mut" style="font-weight:400;border-top:0">${chf(feeSum)}</td></tr>`:""}<tr><td colspan="3">Total</td><td class="num">${chf(sum+feeSum)}</td></tr></tfoot>`:""}</table></div>
   </section>`;
 }
 
@@ -562,7 +577,7 @@ function secSettle(t,lg){
     ${lg.open?`<p class="hint"><span class="pill warn">noch offen</span> CHF ${chf(lg.open)} ohne Zahler sind noch nicht in der Abrechnung enthalten.</p>`:""}
     <div class="tablewrap"><table><thead><tr><th>Person</th><th class="num">Nächte</th><th class="num">Anteil</th><th class="num">Bezahlt</th><th class="num">Ausgeglichen</th><th class="num">Saldo</th></tr></thead>
     <tbody>${rows}</tbody><tfoot><tr><td>Total</td><td></td><td class="num">${chf(tot.o)}</td><td class="num">${chf(tot.p)}</td><td></td><td></td></tr></tfoot></table></div>
-    <p class="hint">Saldo positiv = erhält Geld, negativ = muss zahlen.</p>
+    <p class="hint">Saldo positiv = erhält Geld, negativ = muss zahlen.${lg.fees?" Anteil inkl. Zuschläge Kind/Hund.":""}</p>
     <h3>Ausgleichszahlungen</h3>
     ${tr.length?`<div class="transfers">${tr.map((z,i)=>`<div class="tr"><div class="who">${pdot(t,z.from)}<span class="arrow">zahlt an</span>${pdot(t,z.to)}</div><div class="amt">CHF ${chf(z.amount)}</div><button class="btn ghost sm edit" data-pay="${i}">Als bezahlt erfassen</button></div>`).join("")}</div>
       <p class="hint">${tr.length} Zahlung${tr.length===1?"":"en"} genügen${naive>tr.length?` (statt ${naive}, wenn jeder jeden Anteil einzeln zurückzahlt)`:""}. ${r5?"Beträge auf 5 Rappen gerundet.":"Rappengenau."} <button class="linkbtn edit" id="tgl5">${r5?"Rappengenau rechnen":"Auf 5 Rappen runden"}</button></p>`
@@ -585,6 +600,7 @@ function wire(t){
     if(el.id==="addRoom")return tripDialog(t);
     if(el.id==="addStay")return stayDialog(t,null,{});
     if(el.id==="addPerson")return personDialog(t,null);
+    if(el.id==="feeBtn")return feeDialog(t);
     if(el.id==="addCost")return costDialog(t,null);
     if(el.id==="tgl5"){t.round5=t.round5===false;commit();return}
     if(el.dataset.pre)return costDialog(t,null,el.dataset.pre);
@@ -667,6 +683,29 @@ function tripDialog(t){
   F("start").onchange=()=>{if(F("end").value<=F("start").value)F("end").value=addDays(F("start").value,7)};
 }
 
+/* ---------- Zuschläge Kind/Hund ---------- */
+function feeDialog(t){
+  const f=t.fees||{};
+  openDlg("Zuschläge Kind / Hund",`
+    <p class="hint">Diese Tarife gelten für die ganzen Ferien und werden automatisch jeder Person belastet, die als Kind markiert ist bzw. einen Hund dabei hat (nach ihren Nächten). Leer lassen = kein Zuschlag.</p>
+    <div class="row"><label class="fl"><span>Kind pro Nacht</span><input name="kidNight" inputmode="decimal" value="${f.kidNight??""}" placeholder="0.00"></label>
+    <label class="fl"><span>🐕 Hund pro Nacht</span><input name="dogNight" inputmode="decimal" value="${f.dogNight??""}" placeholder="0.00"></label>
+    <label class="fl"><span>🐕 Hund pauschal</span><input name="dogFlat" inputmode="decimal" value="${f.dogFlat??""}" placeholder="0.00"></label></div>
+    <label class="fl"><span>Bezahlt von (an Vermieter)</span><select name="paidBy"><option value="">– noch offen –</option>${t.people.map(p=>`<option value="${p.id}" ${p.id===f.paidBy?"selected":""}>${esc(p.name)}</option>`).join("")}</select></label>
+    <div class="plist" id="feePrev"></div>`,{
+    onSave(){
+      const v=n=>{const x=F(n).value.trim().replace(",",".");return x&&toRp(x)>0?x:""};
+      t.fees={kidNight:v("kidNight"),dogNight:v("dogNight"),dogFlat:v("dogFlat"),paidBy:F("paidBy").value};
+      commit();
+    }});
+  const upd=()=>{
+    const tmp={...t,fees:{kidNight:F("kidNight").value.replace(",","."),dogNight:F("dogNight").value.replace(",","."),dogFlat:F("dogFlat").value.replace(",",".")}};
+    const rows=t.people.map(p=>({p,f:personFee(tmp,p)})).filter(x=>x.f.total);
+    $("feePrev").innerHTML=rows.length?rows.map(x=>`<div class="prow" style="grid-template-columns:1fr auto"><span>${pdot(t,x.p.id)} <span class="mut">${x.f.txt.join(" · ")}</span></span><span class="sh">${chf(x.f.total)}</span></div>`).join(""):`<div class="prow" style="grid-template-columns:1fr"><span class="mut">Noch niemand als Kind markiert oder mit Hund eingetragen (bei der Person).</span></div>`;
+  };
+  form.addEventListener("input",upd); upd();
+}
+
 /* ---------- Person ---------- */
 function personDialog(t,p){
   const isNew=!p, w=p?wt(p):1;
@@ -678,8 +717,8 @@ function personDialog(t,p){
       <div class="seg">${[["1","Erwachsen ×1"],["0.5","Kind ×½"],["0","Gratis ×0"],["x","eigene"]].map(([v,l])=>`<label><input type="radio" name="wp" value="${v}" ${preset===v?"checked":""}>${l}</label>`).join("")}</div>
       <input class="inp" name="wx" type="number" step="0.05" min="0" max="5" value="${w}" ${preset==="x"?"":"hidden"} aria-label="Eigene Gewichtung">
     </div>
-    <label class="prow" style="border:1px solid var(--line);border-radius:10px;grid-template-columns:auto 1fr"><input type="checkbox" name="child" ${isKid(p)?"checked":""}><span>Kind <span class="mut">– für Kindertarif beim Staffelpreis (z.B. bis 16 Jahre)</span></span></label>
-    <label class="prow" style="border:1px solid var(--line);border-radius:10px;grid-template-columns:auto 1fr"><input type="number" name="dogs" min="0" max="9" step="1" value="${dogs(p)}" aria-label="Anzahl Hunde"><span>🐕 Hund(e) dabei <span class="mut">– für Hundekosten pro Nacht oder pauschal</span></span></label>
+    <label class="prow" style="border:1px solid var(--line);border-radius:10px;grid-template-columns:auto 1fr"><input type="checkbox" name="child" ${isKid(p)?"checked":""}><span>Kind <span class="mut">– Kindertarif wird automatisch verrechnet (Zuschläge)</span></span></label>
+    <label class="prow" style="border:1px solid var(--line);border-radius:10px;grid-template-columns:auto 1fr"><input type="number" name="dogs" min="0" max="9" step="1" value="${dogs(p)}" aria-label="Anzahl Hunde"><span>🐕 Hund(e) dabei <span class="mut">– Hundetarif wird automatisch verrechnet (Zuschläge)</span></span></label>
     ${isNew?`<div class="row2"><label class="fl"><span>Anreise</span><input type="date" name="from" value="${t.start}" min="${t.start}" max="${t.end}"></label><label class="fl"><span>Abreise</span><input type="date" name="to" value="${t.end}" min="${t.start}" max="${t.end}"></label></div>
       <label class="fl"><span>Zimmer</span><select name="room">${roomOpts(t,"")}</select></label>`
     :`<div class="fl"><span>Aufenthalte</span><div class="plist">${st.map(s=>`<div class="prow"><span></span><span>${range(s.from,s.to)} · ${esc(R(t,s.roomId)?.name||"ohne Zimmer")}</span><span class="sh">${diff(s.from,s.to)} N.</span><button type="button" class="btn ghost sm" data-es="${s.id}">Ändern</button></div>`).join("")||`<div class="prow"><span></span><span class="mut">kein Aufenthalt</span></div>`}</div>
@@ -760,8 +799,7 @@ const PRESETS={
   miete_w:{title:"Miete",cat:"unterkunft",unit:"woche",mode:"naechte"},
   miete_t:{title:"Miete",cat:"unterkunft",unit:"total",mode:"naechte"},
   miete_s:{title:"Miete",cat:"unterkunft",unit:"staffel",mode:"naechte",incl:2},
-  hund_n:{title:"Hund",cat:"unterkunft",unit:"hund_nacht",mode:"naechte"},
-  hund_t:{title:"Hund",cat:"neben",unit:"hund_total",mode:"naechte"},
+
   reinigung:{title:"Schlussreinigung",cat:"neben",unit:"total",mode:"gleich"},
   kurtaxe:{title:"Kurtaxe",cat:"neben",unit:"ppn",mode:"naechte"},
   einkauf:{title:"Einkauf",cat:"einkauf",unit:"total",mode:"anwesend",date:"today"}
@@ -779,7 +817,7 @@ function costDialog(t,c,preKey){
     <label class="fl"><span>Einheit</span><select name="unit">${Object.entries(UNITS).map(([k,v])=>`<option value="${k}" ${k===cur.unit?"selected":""}>${v}</option>`).join("")}</select></label></div>
     <div class="row" id="stf"><label class="fl"><span>Inkl. Personen</span><input name="incl" type="number" min="0" max="50" value="${cur.incl??2}"></label>
       <label class="fl"><span>+ pro weitere Pers.</span><input name="extra" inputmode="decimal" value="${cur.extra??""}" placeholder="0.00"></label>
-      <label class="fl"><span>Kind pro Nacht</span><input name="kid" inputmode="decimal" value="${cur.kid??""}" placeholder="0.00"></label></div>
+</div>
     <p class="hint" id="stfHint"></p>
     <div class="row2" id="rng"><label class="fl"><span>Von (Nacht)</span><input type="date" name="from" value="${cur.from||t.start}" min="${t.start}" max="${t.end}"></label><label class="fl"><span>Bis (Abreise)</span><input type="date" name="to" value="${cur.to||t.end}" min="${t.start}" max="${t.end}"></label></div>
     <div class="row2"><label class="fl"><span>Bezahlt von</span><select name="paidBy"><option value="">– noch offen –</option>${t.people.map(p=>`<option value="${p.id}" ${p.id===cur.paidBy?"selected":""}>${esc(p.name)}</option>`).join("")}</select></label>
@@ -812,7 +850,7 @@ function costDialog(t,c,preKey){
     return {title:F("title").value.trim(),cat:F("cat").value,amount:F("amount").value.trim().replace(",","."),unit,mode,
       who:who.length===t.people.length?[]:who,pct:mode==="prozent"?pct:{},paidBy:F("paidBy").value,date:F("date").value,
       from:ranged&&F("from").value!==t.start?F("from").value:"",to:ranged&&F("to").value!==t.end?F("to").value:"",
-      ...(unit==="staffel"?{incl:Math.max(0,parseInt(F("incl").value)||0),extra:F("extra").value.trim().replace(",","."),kid:F("kid").value.trim().replace(",",".")}:{})};
+      ...(unit==="staffel"?{incl:Math.max(0,parseInt(F("incl").value)||0),extra:F("extra").value.trim().replace(",",".")}:{})};
   }
   const HINT={naechte:"Anteil nach Anzahl Nächten im Zeitraum (× Gewichtung). Wer länger bleibt, zahlt mehr.",
     gleich:"Jede ausgewählte Person zahlt gleich viel (× Gewichtung), egal wie lange sie bleibt.",
@@ -823,9 +861,9 @@ function costDialog(t,c,preKey){
     $("rng").hidden=!ranged;
     const st=x.unit==="staffel"; $("stf").hidden=!st; $("stfHint").hidden=!st;
     $("amtLbl").textContent=st?"Grundpreis / Nacht CHF":"Betrag CHF";
-    if(st){const kids=t.people.filter(isKid).map(p=>p.name);$("stfHint").textContent=`Pro Nacht wird nach den Anwesenden gerechnet. Kinder (${kids.length?kids.join(", "):"noch keine – in der Person «Kind» anhaken"}) zählen nicht zur Grundbelegung.`}
+    if(st){const kids=t.people.filter(isKid).map(p=>p.name);$("stfHint").textContent=`Pro Nacht wird nach den Anwesenden gerechnet. Kinder (${kids.length?kids.join(", "):"noch keine – in der Person «Kind» anhaken"}) zählen nicht zur Grundbelegung und zahlen an diesen Posten nichts; ihr Kindertarif wird bei der Person verrechnet (Personen › Zuschläge).`}
     const dogHint=isDogUnit(x.unit)?(()=>{const o=t.people.filter(p=>dogs(p)).map(p=>`${p.name} (${dogs(p)})`);return `Hundehalter: ${o.length?o.join(", "):"noch keine – bei der Person «Hund(e) dabei» eintragen"}. `})():"";
-    $("modeHint").textContent=isDogUnit(x.unit)&&x.mode==="naechte"?dogHint+"Die Kosten gehen direkt an die Hundehalter"+(x.unit==="hund_nacht"?" (Anzahl Hunde × ihre Nächte).":" (pro Hund)."):isDogUnit(x.unit)?dogHint+HINT[x.mode]:st&&x.mode==="naechte"?"Pro Nacht: Kinder zahlen ihren Kindertarif, die anwesenden Erwachsenen teilen Grundpreis und Zuschläge (× Gewichtung).":HINT[x.mode];
+    $("modeHint").textContent=isDogUnit(x.unit)&&x.mode==="naechte"?dogHint+"Die Kosten gehen direkt an die Hundehalter"+(x.unit==="hund_nacht"?" (Anzahl Hunde × ihre Nächte).":" (pro Hund)."):isDogUnit(x.unit)?dogHint+HINT[x.mode]:st&&x.mode==="naechte"?"Pro Nacht teilen die anwesenden Erwachsenen Grundpreis und Zuschläge für weitere Personen (× Gewichtung).":HINT[x.mode];
     form.querySelectorAll("[name^=pct_]").forEach(i=>i.hidden=x.mode!=="prozent");
     const s=shares(t,{...x,who:x.who.length?x.who:t.people.length===form.querySelectorAll("[name=who]:checked").length?[]:["-"]});
     $("cTot").textContent="CHF "+chf(s.total);
@@ -854,7 +892,12 @@ const fileUrl=`${API}/contents/${FILE}`;
 function normalize(d){
   const trips=Array.isArray(d&&d.trips)?d.trips:[];
   for(const t of trips){for(const k of ["rooms","people","stays","costs","payments"])if(!Array.isArray(t[k]))t[k]=[];
-    t.people.forEach((p,i)=>{if(typeof p.hue!=="number")p.hue=HUES[i%HUES.length]})}
+    t.people.forEach((p,i)=>{if(typeof p.hue!=="number")p.hue=HUES[i%HUES.length]});
+    if(!t.fees||typeof t.fees!=="object")t.fees={};
+    for(const c of [...t.costs]){
+      if(c.unit==="staffel"&&toRp(c.kid)>0){if(!toRp(t.fees.kidNight))t.fees.kidNight=c.kid;if(!t.fees.paidBy)t.fees.paidBy=c.paidBy||"";delete c.kid}
+      if(c.unit==="hund_nacht"||c.unit==="hund_total"){const k=c.unit==="hund_nacht"?"dogNight":"dogFlat";if(!toRp(t.fees[k]))t.fees[k]=c.amount;if(!t.fees.paidBy)t.fees.paidBy=c.paidBy||"";t.costs.splice(t.costs.indexOf(c),1)}
+    }}
   return {trips};
 }
 async function fetchDb(){
