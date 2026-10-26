@@ -46,6 +46,13 @@
      "weight": 1,
      "child": false,
      "hue": 22
+    },
+    {
+     "id": "100njp9",
+     "name": "Dominic",
+     "weight": 1,
+     "child": false,
+     "hue": 148
     }
    ],
    "stays": [
@@ -62,6 +69,13 @@
      "roomId": "jt84om6",
      "from": "2026-11-12",
      "to": "2026-11-15"
+    },
+    {
+     "id": "qadq1ad",
+     "personId": "100njp9",
+     "roomId": "",
+     "from": "2026-11-13",
+     "to": "2026-11-15"
     }
    ],
    "costs": [],
@@ -69,5 +83,5 @@
    "round5": true
   }
  ],
- "updated": "2026-10-26T15:47:55.411Z"
+ "updated": "2026-10-26T15:48:04.028Z"
 }
