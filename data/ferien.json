@@ -78,10 +78,28 @@
      "to": "2026-11-15"
     }
    ],
-   "costs": [],
+   "costs": [
+    {
+     "id": "7bue5kq",
+     "title": "Miete",
+     "cat": "unterkunft",
+     "amount": "85",
+     "unit": "staffel",
+     "mode": "naechte",
+     "who": [],
+     "pct": {},
+     "paidBy": "0t3ovt5",
+     "date": "",
+     "from": "",
+     "to": "",
+     "incl": 2,
+     "extra": "30",
+     "kid": "5"
+    }
+   ],
    "payments": [],
    "round5": true
   }
  ],
- "updated": "2026-10-26T15:48:11.416Z"
+ "updated": "2026-10-26T15:49:16.334Z"
 }
