@@ -144,7 +144,7 @@
     }
    ],
    "payments": [],
-   "round5": false,
+   "round5": true,
    "fees": {
     "kidNight": "5",
     "paidBy": "0t3ovt5",
@@ -152,5 +152,5 @@
    }
   }
  ],
- "updated": "2026-10-26T16:13:10.727Z"
+ "updated": "2026-10-26T16:13:13.643Z"
 }
