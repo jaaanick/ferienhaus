@@ -378,10 +378,12 @@ function personFee(t,p){
   if(d&&toRp(f.dogFlat)>0){o.dog+=toRp(f.dogFlat)*d;o.txt.push(`Hund ${d>1?d+" × ":""}pauschal ${chf(toRp(f.dogFlat))}`)}
   o.total=o.kid+o.dog; return o;
 }
+const rentCost=t=>t.costs.find(c=>c.cat==="unterkunft")||null;
+const feePayer=t=>(t.fees||{}).paidBy||(rentCost(t)||{}).paidBy||"";
 function ledger(t){
   const L={}; for(const p of t.people)L[p.id]={paid:0,owed:0,sent:0,recv:0,fee:0,nights:personNights(t,p.id).size};
   let total=0, open=0, fees=0; const problems=[];
-  const fp=(t.fees||{}).paidBy;
+  const fp=feePayer(t);
   for(const p of t.people){const f=personFee(t,p).total;if(!f)continue;L[p.id].fee=f;fees+=f;total+=f;
     if(fp&&L[fp]){L[fp].paid+=f;L[p.id].owed+=f}else open+=f}
   for(const c of t.costs){
@@ -544,7 +546,7 @@ function tarifBox(t){
   return `<div class="box tarif">
     <div class="shead"><h3 style="margin:0">Tarife Kind / Hund</h3><span class="pill">nur Info – berechnet bei den Personen</span></div>
     <div class="row">${inp("kidNight","Kind pro Nacht")}${inp("dogNight","🐕 pro Nacht pro Hund")}${inp("dogFlat","🐕 pauschal pro Hund")}
-      <label class="fl"><span>Bezahlt von</span><select data-fee="paidBy" ${ro?"disabled":""}><option value="">– noch offen –</option>${t.people.map(p=>`<option value="${p.id}" ${p.id===f.paidBy?"selected":""}>${esc(p.name)}</option>`).join("")}</select></label></div>
+      <label class="fl"><span>Bezahlt von</span><select data-fee="paidBy" ${ro?"disabled":""}><option value="">${rentCost(t)?`– mit der Miete${rentCost(t).paidBy&&P(t,rentCost(t).paidBy)?" ("+esc(pname(t,rentCost(t).paidBy))+")":""} –`:"– noch offen –"}</option>${t.people.map(p=>`<option value="${p.id}" ${p.id===f.paidBy?"selected":""}>${esc(p.name)}</option>`).join("")}</select></label></div>
     <p class="hint">${!any?"Noch keine Tarife eingetragen.":rows.length?"Berechnet: "+rows.map(r=>`${esc(r.p.name)} ${chf(r.x.total)} <span class="mut">(${r.x.txt.join(", ")})</span>`).join(" · "):"Wirkt sich erst aus, wenn bei einer Person Kinder oder Hunde eingetragen sind."}</p>
   </div>`;
 }
@@ -552,8 +554,9 @@ function secCosts(t){
   const feeSum=t.people.reduce((a,p)=>a+personFee(t,p).total,0);
   const cs=[...t.costs].sort((a,b)=>(Object.keys(CATS).indexOf(a.cat)-Object.keys(CATS).indexOf(b.cat))||((a.date||"")<(b.date||"")?-1:1));
   let sum=0;
+  const rc=feeSum?rentCost(t):null;
   const rows=cs.map(c=>{
-    const s=shares(t,c); sum+=s.total; const [f,to]=costRange(t,c);
+    const s=shares(t,c); sum+=s.total; const [f,to]=costRange(t,c), inkl=c===rc;
     const unit=isDogUnit(c.unit)?`${chf(toRp(c.amount))} ${UNITS[c.unit]} · ${participants(t,c).reduce((n,id)=>n+dogs(P(t,id)),0)} Hund(e)`
       :c.unit==="staffel"?`${chf(toRp(c.amount))}/Nacht für ${parseInt(c.incl)||0} P. · +${chf(toRp(c.extra))} weitere P. · ${diff(f,to)} N.`
       :c.unit&&c.unit!=="total"?`${chf(toRp(c.amount))} ${UNITS[c.unit]} · ${diff(f,to)} N.`:"";
@@ -561,7 +564,7 @@ function secCosts(t){
       <td><b>${esc(c.title)}</b><span class="meta">${CATS[c.cat]||""}${c.date?` · ${fd(c.date)}`:""}${unit?` · ${unit}`:""}</span></td>
       <td class="nw">${c.paidBy&&P(t,c.paidBy)?pdot(t,c.paidBy):`<span class="pill warn">noch offen</span>`}</td>
       <td>${splitDesc(t,c)}${s.err?`<span class="meta err">${esc(s.err)}</span>`:""}</td>
-      <td class="num">${chf(s.total)}</td></tr>`;
+      <td class="num">${chf(s.total+(inkl?feeSum:0))}${inkl?`<span class="meta">inkl. Zuschläge Kind/Hund ${chf(feeSum)}</span>`:""}</td></tr>`;
   }).join("");
   return `<section class="section" id="sKosten">
     <div class="shead"><h2>Kosten</h2><div class="tools edit"><button class="btn sm" id="addCost">＋ Kosten</button></div></div>
@@ -578,7 +581,7 @@ function secCosts(t){
     ${tarifBox(t)}
     <div class="tablewrap"><table><thead><tr><th>Bezeichnung</th><th>Bezahlt von</th><th>Aufteilung</th><th class="num">CHF</th></tr></thead>
     <tbody>${rows||`<tr><td colspan="4" class="empty">Noch keine Kosten erfasst.</td></tr>`}</tbody>
-    ${rows||feeSum?`<tfoot>${feeSum?`<tr><td colspan="3" style="font-weight:400;border-top:0" class="mut">Zuschläge Kind/Hund (bei den Personen)</td><td class="num mut" style="font-weight:400;border-top:0">${chf(feeSum)}</td></tr>`:""}<tr><td colspan="3">Total</td><td class="num">${chf(sum+feeSum)}</td></tr></tfoot>`:""}</table></div>
+    ${rows||feeSum?`<tfoot>${feeSum&&!rc?`<tr><td colspan="3" style="font-weight:400;border-top:0" class="mut">Zuschläge Kind/Hund (bei den Personen)</td><td class="num mut" style="font-weight:400;border-top:0">${chf(feeSum)}</td></tr>`:""}<tr><td colspan="3">Total</td><td class="num">${chf(sum+feeSum)}</td></tr></tfoot>`:""}</table></div>
   </section>`;
 }
 
