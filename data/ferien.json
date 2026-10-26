@@ -60,15 +60,6 @@
      "dogs": 0
     },
     {
-     "id": "iimdsfc",
-     "name": "Tobias",
-     "weight": 1,
-     "hue": 282,
-     "child": false,
-     "kids": 1,
-     "dogs": 0
-    },
-    {
      "id": "2p91o3p",
      "name": "Tom",
      "weight": 1,
@@ -153,5 +144,5 @@
    }
   }
  ],
- "updated": "2026-10-26T16:22:03.971Z"
+ "updated": "2026-10-26T16:22:10.695Z"
 }
