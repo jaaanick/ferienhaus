@@ -1,0 +1,880 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ferienhaus">
+<meta name="theme-color" content="#f3f4f5">
+<title>Ferienhaus-Planer</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 15 16 5l12 10v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z' fill='%23dbe8f4' stroke='%232c5a85' stroke-width='2' stroke-linejoin='round'/%3E%3Crect x='13' y='19' width='6' height='10' fill='%232c5a85'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f3f4f5; --surface:#ffffff; --ink:#1c2024; --muted:#646d76; --line:#d9dde1; --accent:#2c5a85; --accent-ink:#ffffff;
+  --neg-bg:#ffc7ce; --neg-ink:#9c0006;
+  --pos-bg:#e3f3e6; --pos-ink:#2f6b3c;
+  --we-bg:#f6f7f8; --shadow:rgba(20,30,40,.18);
+  --pb-s:70%; --pb-l:87%; --pi-s:55%; --pi-l:24%; --pl-s:45%; --pl-l:60%;
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15181b; --surface:#1e2226; --ink:#e7eaed; --muted:#9aa3ab; --line:#30363c; --accent:#7fb0de; --accent-ink:#0e1a26;
+  --neg-bg:#5a1c22; --neg-ink:#ffb3bc; --pos-bg:#1d3223; --pos-ink:#9fd6ab; --we-bg:#1a1e21; --shadow:rgba(0,0,0,.5);
+  --pb-s:30%; --pb-l:28%; --pi-s:70%; --pi-l:86%; --pl-s:35%; --pl-l:45%; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15181b; --surface:#1e2226; --ink:#e7eaed; --muted:#9aa3ab; --line:#30363c; --accent:#7fb0de; --accent-ink:#0e1a26;
+  --neg-bg:#5a1c22; --neg-ink:#ffb3bc; --pos-bg:#1d3223; --pos-ink:#9fd6ab; --we-bg:#1a1e21; --shadow:rgba(0,0,0,.5);
+  --pb-s:30%; --pb-l:28%; --pi-s:70%; --pi-l:86%; --pl-s:35%; --pl-l:45%; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{max-width:1080px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--f-display);font-weight:700;font-size:1.6rem;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.sub{color:var(--muted);font-size:.85rem;margin-top:2px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+.tripsel{display:flex;gap:6px;align-items:center}
+.tripsel select{max-width:min(62vw,320px);border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;font-weight:600}
+.icon{min-width:38px;height:38px;border:1px solid var(--line);background:var(--surface);border-radius:8px;font-size:1.05rem;line-height:1;padding:0 10px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.status{font-size:.8rem;color:var(--muted)}
+.status.warn{color:var(--neg-ink)}
+.jump{display:flex;flex-wrap:wrap;gap:6px}
+.jump a{font-size:.82rem;font-weight:600;text-decoration:none;color:var(--muted);border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px}
+.jump a:hover{color:var(--ink);border-color:var(--ink)}
+
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.stat{padding:12px 14px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat:last-child{border-right:0}
+.stat .k{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.stat .v{font-family:var(--f-mono);font-size:1.35rem;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat .v small{font-family:var(--f-body);font-size:.78rem;color:var(--muted);font-weight:400;margin-left:4px}
+.stat.over{background:var(--neg-bg)} .stat.over .k,.stat.over .v,.stat.over small{color:var(--neg-ink)}
+@media (max-width:680px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat:nth-child(2){border-right:0}.stat:nth-child(-n+2){border-bottom:1px solid var(--line)}}
+
+.section{display:flex;flex-direction:column;gap:10px;scroll-margin-top:12px}
+.shead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px}
+.shead h2{font-family:var(--f-display);font-size:1.2rem;margin:0;font-weight:600}
+.shead .tools{display:flex;flex-wrap:wrap;gap:6px}
+.hint{font-size:.82rem;color:var(--muted);margin:0;max-width:75ch}
+h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:6px 0 0;font-weight:600}
+
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);padding:7px 13px;border-radius:8px;font-weight:600;font-size:.86rem;white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--ink)}
+.btn.danger{background:transparent;color:var(--neg-ink);border-color:var(--neg-ink)}
+.btn.sm{padding:4px 10px;font-size:.8rem}
+.btn:disabled{opacity:.55;cursor:default}
+.linkbtn{border:0;background:none;padding:0;color:var(--accent);text-decoration:underline;font-size:.8rem}
+body.ro .edit{display:none!important}
+
+/* Belegungsplan */
+.plan{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface);-webkit-overflow-scrolling:touch}
+.pg{--cw:46px;--lw:132px;--rh:38px;display:grid;grid-template-columns:var(--lw) repeat(var(--n),var(--cw));grid-auto-rows:var(--rh);min-width:max-content;position:relative}
+@media (max-width:620px){.pg{--cw:40px;--lw:98px;--rh:36px}}
+.pg>*{min-width:0}
+.ph{grid-row:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.66rem;line-height:1.15;color:var(--muted);border-bottom:1px solid var(--line);border-left:1px solid var(--line);text-transform:uppercase;letter-spacing:.04em}
+.ph b{font-family:var(--f-mono);font-size:.78rem;color:var(--ink);font-weight:500;letter-spacing:0}
+.ph.mstart{border-left-color:var(--muted)}
+.corner{grid-row:1;grid-column:1;position:sticky;left:0;z-index:3;background:var(--surface);border-bottom:1px solid var(--line);border-right:1px solid var(--line);font-size:.68rem;color:var(--muted);display:flex;align-items:flex-end;padding:4px 8px;text-transform:uppercase;letter-spacing:.05em}
+.rl{grid-column:1;position:sticky;left:0;z-index:3;background:var(--surface);border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px 8px;display:flex;flex-direction:column;justify-content:center;gap:1px;text-align:left;border-top:0;border-left:0;border-radius:0}
+.rl b{font-weight:600;font-size:.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rl small{font-size:.72rem;color:var(--muted)}
+.rl.warn small{color:var(--neg-ink);font-weight:600}
+.cell{border:0;border-left:1px solid var(--line);background:transparent;padding:0;border-radius:0}
+.cell.we{background:var(--we-bg)}
+.cell.lastlane{border-bottom:1px solid var(--line)}
+.cell.over{background:repeating-linear-gradient(135deg,var(--neg-bg) 0 6px,transparent 6px 12px)}
+body:not(.ro) .cell:hover{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.stay{z-index:2;margin:5px 2px;border-radius:6px;border:1px solid hsl(var(--h) var(--pl-s) var(--pl-l));background:hsl(var(--h) var(--pb-s) var(--pb-l));color:hsl(var(--h) var(--pi-s) var(--pi-l));font-size:.78rem;font-weight:600;text-align:left;padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.stay small{font-weight:400;opacity:.8}
+.stay.clash{outline:2px solid var(--neg-ink);outline-offset:-2px}
+.foot{border-left:1px solid var(--line);font-family:var(--f-mono);font-size:.72rem;display:flex;align-items:center;justify-content:center;color:var(--muted);border-top:1px solid var(--line)}
+.foot.full{color:var(--ink);font-weight:500}
+.foot.over{background:var(--neg-bg);color:var(--neg-ink);font-weight:500}
+.rl.f{border-top:1px solid var(--line);border-bottom:0}
+
+/* Tabellen */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.86rem}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+tfoot td{border-top:1px solid var(--ink);border-bottom:0;font-weight:600}
+td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.nw{white-space:nowrap}
+tr.click{cursor:pointer}
+body:not(.ro) tr.click:hover td{background:var(--bg)}
+td .meta{display:block;font-size:.76rem;color:var(--muted)}
+.neg{color:var(--neg-ink)} .pos{color:var(--pos-ink)} .mut{color:var(--muted)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:hsl(var(--h) var(--pb-s) calc(var(--pb-l) - 18%));margin-right:7px;vertical-align:baseline;flex:none}
+.pill{display:inline-block;font-size:.7rem;font-weight:600;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.pill.warn{border-color:var(--neg-ink);color:var(--neg-ink)}
+.empty{padding:18px;color:var(--muted);font-size:.88rem}
+
+/* Ausgleich */
+.transfers{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.tr{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line)}
+.tr:last-child{border-bottom:0}
+.tr .who{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-weight:600;min-width:0}
+.tr .arrow{color:var(--muted);font-weight:400}
+.tr .amt{font-family:var(--f-mono);font-size:1.05rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tr.done{color:var(--muted)}
+@media (max-width:520px){.tr{grid-template-columns:1fr auto}.tr .btn{grid-column:1/-1;justify-self:start}}
+.okbox{border:1px solid var(--pos-ink);background:var(--pos-bg);color:var(--pos-ink);border-radius:10px;padding:12px 14px;font-weight:600;font-size:.9rem}
+
+.box{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.box p,.box ol{margin:0;color:var(--muted);font-size:.86rem;max-width:68ch}
+.box ol{padding-left:1.3em;display:flex;flex-direction:column;gap:3px}
+.box b{color:var(--ink)}
+.box.auth{border-color:var(--accent)}
+.tokrow{display:flex;flex-wrap:wrap;gap:8px}
+.tokrow input{flex:1 1 260px;min-width:0;font-family:var(--f-mono);font-size:.82rem;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:8px 10px}
+.toast{font-size:.82rem;color:var(--pos-ink);min-height:1.2em}
+.toast.err{color:var(--neg-ink)}
+.hero{border:1px dashed var(--muted);border-radius:12px;padding:28px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;color:var(--muted)}
+.hero b{color:var(--ink);font-size:1.1rem}
+footer{font-size:.78rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+
+/* Dialog */
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:0;width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-shadow:0 18px 48px var(--shadow)}
+dialog::backdrop{background:rgba(10,15,20,.42)}
+dialog form{display:flex;flex-direction:column;max-height:calc(100dvh - 26px)}
+.dh{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.dh h2{margin:0;font-size:1.1rem;font-weight:600}
+.dh .x{border:0;background:none;font-size:1.4rem;line-height:1;color:var(--muted);padding:4px 8px}
+.db{padding:14px 16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+.df{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--line)}
+.df .r{display:flex;gap:8px;margin-left:auto}
+.fl{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--muted);font-weight:600;min-width:0}
+.fl>span{text-transform:uppercase;letter-spacing:.05em;font-size:.7rem}
+.fl input,.fl select,.inp{border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:8px 10px;font-size:.95rem;font-weight:400;width:100%;min-width:0}
+.fl input[type=date]{min-height:40px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;flex-wrap:wrap;gap:4px;border:1px solid var(--line);border-radius:9px;padding:3px;background:var(--bg)}
+.seg label{flex:1 1 auto;text-align:center;font-size:.82rem;font-weight:600;color:var(--muted);padding:6px 8px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--ink);color:var(--bg)}
+.seg label:has(input:focus-visible){outline:2px solid var(--accent)}
+.plist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.prow{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--line);font-size:.88rem}
+.prow:last-child{border-bottom:0}
+.prow input[type=number]{width:74px;text-align:right;font-family:var(--f-mono);border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:4px 6px}
+.prow .sh{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);text-align:right;min-width:92px}
+.prow.off{opacity:.5}
+.preview{font-size:.82rem;color:var(--muted);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.preview b{font-family:var(--f-mono);color:var(--ink);font-weight:500}
+.err{color:var(--neg-ink);font-size:.82rem;font-weight:600}
+.rooms{display:flex;flex-direction:column;gap:6px}
+.room{display:grid;grid-template-columns:1fr 92px auto;gap:6px;align-items:center}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 10px;font-size:.8rem;font-weight:600}
+.chip:hover{border-color:var(--ink)}
+</style>
+</head>
+<body class="ro">
+<div class="wrap">
+  <header>
+    <div>
+      <h1 id="title">Ferienhaus-Planer</h1>
+      <div class="sub" id="subtitle">Zimmer, Belegung und Kosten fair aufteilen</div>
+    </div>
+    <div class="tripsel">
+      <select id="tripSel" aria-label="Ferien wählen"></select>
+      <button class="icon edit" id="tripEdit" title="Ferien bearbeiten" aria-label="Ferien bearbeiten">✎</button>
+      <button class="icon edit" id="tripNew" title="Neue Ferien" aria-label="Neue Ferien">＋</button>
+    </div>
+  </header>
+
+  <div class="box auth" id="auth" hidden>
+    <p><b>Nur Ansicht.</b> Zum Bearbeiten auf diesem Gerät einmal einen GitHub-Token eingeben. Er bleibt nur in diesem Browser gespeichert.</p>
+    <ol>
+      <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Neuen Fine-grained Token erstellen</a> (bei GitHub angemeldet). Alternativ den bestehenden Ferienplaner-Token um dieses Repo erweitern.</li>
+      <li>Repository access: <b>Only select repositories</b> › <b>ferienhaus</b>.</li>
+      <li>Permissions › Repository permissions › <b>Contents: Read and write</b>.</li>
+      <li>«Generate token», Token kopieren und hier einfügen.</li>
+    </ol>
+    <div class="tokrow">
+      <input id="tok" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…" aria-label="GitHub-Token">
+      <button class="btn" id="tokSave">Speichern</button>
+    </div>
+    <div class="toast" id="tokMsg" role="status"></div>
+  </div>
+
+  <div class="bar">
+    <nav class="jump" id="jump" hidden>
+      <a href="#sBelegung">Belegung</a><a href="#sPersonen">Personen</a><a href="#sKosten">Kosten</a><a href="#sAbrechnung">Abrechnung</a>
+    </nav>
+    <div class="status" id="status">Wird geladen …</div>
+  </div>
+
+  <div id="main"></div>
+
+  <footer>
+    <span id="who"></span>
+    <button class="linkbtn" id="tokClear" hidden>Token auf diesem Gerät entfernen</button>
+  </footer>
+</div>
+
+<dialog id="dlg"><form method="dialog" id="dlgForm" novalidate></form></dialog>
+
+<script>
+/* ================= Speicherort ================= */
+const OWNER="jaaanick", REPO="ferienhaus", BRANCH="main", FILE="data/ferien.json";
+const API=`https://api.github.com/repos/${OWNER}/${REPO}`;
+const LS={get(k){try{return localStorage.getItem(k)}catch(_){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(_){}},del(k){try{localStorage.removeItem(k)}catch(_){}}};
+const TK="ghToken_ferienhaus";
+let token=LS.get(TK)||"";
+let db={trips:[]}, sha=null, loaded=false;
+let curId=LS.get("ferienhausTrip")||"";
+
+/* ================= Hilfen ================= */
+const $=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,"0");
+const DOW=["Mo","Di","Mi","Do","Fr","Sa","So"];
+const MON=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const D=s=>{const[y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d)};
+const S=t=>{const d=new Date(t);return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`};
+const addDays=(s,n)=>S(D(s)+n*864e5);
+const diff=(a,b)=>Math.round((D(b)-D(a))/864e5);
+const nights=(a,b)=>{const o=[];for(let s=a;s<b;s=addDays(s,1))o.push(s);return o};
+const wdOf=s=>(new Date(D(s)).getUTCDay()+6)%7;
+const fd=s=>s?`${DOW[wdOf(s)]} ${s.slice(8)}.${s.slice(5,7)}.`:"";
+const fdy=s=>s?`${fd(s)}${s.slice(0,4)}`:"";
+const range=(a,b)=>{if(!a||!b)return"";const sy=a.slice(0,4)===b.slice(0,4);return `${sy?fd(a):fdy(a)} – ${fdy(b)}`};
+const isoToday=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
+const NF=new Intl.NumberFormat("de-CH",{minimumFractionDigits:2,maximumFractionDigits:2});
+const chf=rp=>NF.format((rp||0)/100);
+const toRp=x=>Math.round((parseFloat(String(x).replace(/['’\s]/g,"").replace(",","."))||0)*100);
+const HUES=[211,22,148,282,46,334,186,98,0,252,72,305,165,120];
+const hueOf=t=>{const used=new Set(t.people.map(p=>p.hue));return HUES.find(h=>!used.has(h))??HUES[t.people.length%HUES.length]};
+const T=()=>db.trips.find(t=>t.id===curId);
+const P=(t,id)=>t.people.find(p=>p.id===id);
+const R=(t,id)=>t.rooms.find(r=>r.id===id);
+const pname=(t,id)=>{const p=P(t,id);return p?p.name:"?"};
+const pdot=(t,id)=>{const p=P(t,id);return p?`<span class="dot" style="--h:${p.hue}"></span>${esc(p.name)}`:"–"};
+const wt=p=>typeof p.weight==="number"&&p.weight>=0?p.weight:1;
+
+const CATS={unterkunft:"Unterkunft",neben:"Nebenkosten",einkauf:"Einkauf",aktiv:"Aktivität",sonst:"Sonstiges"};
+const UNITS={total:"Pauschal",nacht:"pro Nacht",woche:"pro Woche",ppn:"pro Person & Nacht"};
+const MODES={naechte:"nach Nächten",gleich:"gleichmässig",anwesend:"Anwesende am Datum",prozent:"prozentual"};
+
+/* ================= Rechnen (alles in Rappen) ================= */
+function personNights(t,pid,from=t.start,to=t.end){
+  const set=new Set();
+  for(const st of t.stays)if(st.personId===pid){
+    const a=st.from>from?st.from:from, b=st.to<to?st.to:to;
+    for(const n of nights(a,b))set.add(n);
+  }
+  return set;
+}
+function presentOn(t,date){const s=new Set();for(const st of t.stays)if(st.from<=date&&date<st.to)s.add(st.personId);return s}
+const costRange=(t,c)=>[c.from||t.start,c.to||t.end];
+function participants(t,c){const all=t.people.map(p=>p.id);return (c.who&&c.who.length)?all.filter(id=>c.who.includes(id)):all}
+function costTotal(t,c){
+  const a=toRp(c.amount), [f,to]=costRange(t,c), N=Math.max(0,diff(f,to));
+  if(c.unit==="nacht")return a*N;
+  if(c.unit==="woche")return Math.round(a*N/7);
+  if(c.unit==="ppn")return a*participants(t,c).reduce((s,id)=>s+personNights(t,id,f,to).size,0);
+  return a;
+}
+function weightsFor(t,c){
+  const ids=participants(t,c), [f,to]=costRange(t,c), w={};
+  const pres=c.mode==="anwesend"&&c.date?presentOn(t,c.date):null;
+  for(const id of ids){
+    const p=P(t,id);
+    if(c.mode==="prozent")w[id]=Math.max(0,+((c.pct||{})[id])||0);
+    else if(c.mode==="gleich")w[id]=wt(p);
+    else if(c.mode==="anwesend")w[id]=pres?(pres.has(id)?wt(p):0):wt(p);
+    else w[id]=personNights(t,id,f,to).size*wt(p);
+  }
+  return w;
+}
+function distribute(total,w){            // Restbetragsverfahren: Summe stimmt auf den Rappen
+  const ids=Object.keys(w), sw=ids.reduce((s,i)=>s+w[i],0);
+  if(!(sw>0))return null;
+  const out={}, rem=[]; let used=0;
+  for(const i of ids){const ex=total*w[i]/sw, fl=Math.floor(ex+1e-9);out[i]=fl;used+=fl;rem.push([ex-fl,i])}
+  rem.sort((a,b)=>b[0]-a[0]);
+  for(let k=0;k<total-used;k++)out[rem[k%rem.length][1]]++;
+  return out;
+}
+function shares(t,c){
+  const total=costTotal(t,c), w=weightsFor(t,c);
+  if(c.mode==="prozent"){const s=Object.values(w).reduce((a,b)=>a+b,0);if(Math.abs(s-100)>0.01)return {total,parts:null,err:`Prozente ergeben ${+s.toFixed(2)} % statt 100 %`}}
+  if(total===0)return {total,parts:{},err:null};
+  const parts=distribute(total,w);
+  if(!parts)return {total,parts:null,err:c.mode==="anwesend"?"Am Datum ist niemand anwesend":c.mode==="naechte"?"Beteiligte haben keine Nächte im Zeitraum":"Niemand beteiligt"};
+  return {total,parts,err:null};
+}
+function ledger(t){
+  const L={}; for(const p of t.people)L[p.id]={paid:0,owed:0,sent:0,recv:0,nights:personNights(t,p.id).size};
+  let total=0, open=0; const problems=[];
+  for(const c of t.costs){
+    const s=shares(t,c); total+=s.total;
+    if(s.err){problems.push({c,msg:s.err});continue}
+    if(!c.paidBy||!L[c.paidBy]){open+=s.total;continue}
+    L[c.paidBy].paid+=s.total;
+    for(const[id,v]of Object.entries(s.parts))L[id].owed+=v;
+  }
+  for(const z of t.payments){const a=toRp(z.amount);if(L[z.from])L[z.from].sent+=a;if(L[z.to])L[z.to].recv+=a}
+  for(const id in L){const x=L[id];x.bal=x.paid-x.owed+x.sent-x.recv}
+  return {L,total,open,problems};
+}
+function roundTo5(bal){                   // Salden auf 5 Rappen, Summe bleibt 0
+  const ids=Object.keys(bal), q={}, fr=[]; let s=0;
+  for(const i of ids){const x=bal[i]/5, f=Math.floor(x);q[i]=f;s+=f;fr.push([x-f,i])}
+  fr.sort((a,b)=>b[0]-a[0]);
+  for(let k=0;k<-s;k++)q[fr[k%fr.length][1]]++;
+  const o={};for(const i of ids)o[i]=q[i]*5;return o;
+}
+function settle(bal){                     // minimale Anzahl Zahlungen
+  const L=Object.entries(bal).filter(([,v])=>v!==0), n=L.length; if(!n)return [];
+  let groups;
+  if(n<=16){
+    const M=1<<n, sum=new Int32Array(M), dp=new Int8Array(M);
+    for(let m=1;m<M;m++){const lb=m&-m,i=31-Math.clz32(lb);sum[m]=sum[m^lb]+L[i][1]}
+    for(let m=1;m<M;m++){let best=0;for(let i=0;i<n;i++)if(m>>i&1){const v=dp[m^(1<<i)];if(v>best)best=v}dp[m]=best+(sum[m]===0?1:0)}
+    groups=[]; let m=M-1, last=M-1;
+    while(m){
+      const target=dp[m]-(sum[m]===0?1:0); let nx=-1;
+      for(let i=0;i<n;i++)if(m>>i&1&&dp[m^(1<<i)]===target){nx=m^(1<<i);break}
+      m=nx; if(sum[m]===0){groups.push(last^m);last=m}
+    }
+    groups=groups.map(g=>L.filter((_,i)=>g>>i&1));
+  }else groups=[L];
+  const out=[];
+  for(const g of groups){
+    const cr=g.filter(x=>x[1]>0).map(x=>[x[0],x[1]]), de=g.filter(x=>x[1]<0).map(x=>[x[0],-x[1]]);
+    while(cr.length&&de.length){
+      cr.sort((a,b)=>b[1]-a[1]);de.sort((a,b)=>b[1]-a[1]);
+      const a=Math.min(cr[0][1],de[0][1]);
+      out.push({from:de[0][0],to:cr[0][0],amount:a});
+      cr[0][1]-=a;de[0][1]-=a;
+      if(!cr[0][1])cr.shift(); if(!de[0][1])de.shift();
+    }
+  }
+  return out.sort((a,b)=>b.amount-a.amount);
+}
+function lanes(t,roomId){                 // Aufenthalte eines Zimmers auf Betten verteilen
+  const st=t.stays.filter(s=>(s.roomId||"")===(roomId||"")&&s.from<t.end&&s.to>t.start).sort((a,b)=>a.from<b.from?-1:a.from>b.from?1:(a.to<b.to?-1:1));
+  const ends=[], at={};
+  for(const s of st){let i=ends.findIndex(e=>e<=s.from);if(i<0){i=ends.length;ends.push(s.to)}else ends[i]=s.to;at[s.id]=i}
+  return {count:ends.length,at};
+}
+
+/* ================= Rendering ================= */
+function render(){
+  const sel=$("tripSel");
+  const trips=[...db.trips].sort((a,b)=>a.start<b.start?1:-1);
+  sel.innerHTML=trips.length?trips.map(t=>`<option value="${t.id}" ${t.id===curId?"selected":""}>${esc(t.name)} · ${t.start.slice(0,4)}</option>`).join(""):`<option value="">Noch keine Ferien</option>`;
+  sel.disabled=!trips.length;
+  $("tripEdit").hidden=!T();
+  const t=T();
+  $("jump").hidden=!t;
+  if(!t){
+    $("title").textContent="Ferienhaus-Planer";$("subtitle").textContent="Zimmer, Belegung und Kosten fair aufteilen";
+    $("main").innerHTML=loaded?`<div class="hero"><b>Noch keine Ferien erfasst</b><span>Ferienhaus mit Datum und Zimmern anlegen, dann Personen eintragen und Kosten erfassen.</span>${token?`<button class="btn" onclick="tripDialog()">Erste Ferien erfassen</button>`:""}</div>`:"";
+    return;
+  }
+  $("title").textContent=t.name;
+  $("subtitle").textContent=[t.ort,range(t.start,t.end)].filter(Boolean).join(" · ");
+  const lg=ledger(t), N=diff(t.start,t.end), beds=t.rooms.reduce((s,r)=>s+(+r.beds||0),0);
+  let peak=0; for(const n of nights(t.start,t.end))peak=Math.max(peak,presentOn(t,n).size);
+  $("main").innerHTML=`
+  <div class="stats">
+    <div class="stat"><span class="k">Aufenthalt</span><span class="v">${N}<small>Nächte</small></span></div>
+    <div class="stat ${peak>beds?"over":""}"><span class="k">Personen / Plätze</span><span class="v">${t.people.length}<small>Pers. · max. ${peak}/${beds} Plätze</small></span></div>
+    <div class="stat"><span class="k">Kosten total</span><span class="v">${chf(lg.total)}<small>CHF</small></span></div>
+    <div class="stat"><span class="k">Pro Person &amp; Nacht</span><span class="v">${(()=>{const pn=Object.values(lg.L).reduce((s,x)=>s+x.nights,0);return pn?chf(Math.round(lg.total/pn)):"–"})()}<small>CHF Ø</small></span></div>
+  </div>
+  ${secPlan(t)}
+  ${secPeople(t,lg)}
+  ${secCosts(t)}
+  ${secSettle(t,lg)}`;
+  wire(t);
+}
+
+function secPlan(t){
+  const ns=nights(t.start,t.end), n=ns.length;
+  if(!n)return `<section class="section" id="sBelegung"><div class="shead"><h2>Belegung</h2></div><p class="hint">Anreise und Abreise in den Ferien-Einstellungen prüfen.</p></section>`;
+  let h=`<div class="corner">Zimmer</div>`;
+  ns.forEach((d,i)=>{const day=+d.slice(8);h+=`<div class="ph ${day===1&&i?"mstart":""}" style="grid-column:${i+2}">${DOW[wdOf(d)]}<b>${d.slice(8)}</b>${day===1||i===0?MON[+d.slice(5,7)-1]:"&nbsp;"}</div>`});
+  let row=2, clashIds=new Set();
+  const groups=[...t.rooms.map(r=>({id:r.id,name:r.name,beds:+r.beds||0})),...(t.stays.some(s=>!s.roomId||!R(t,s.roomId))?[{id:"",name:"Ohne Zimmer",beds:0,none:true}]:[])];
+  for(const g of groups){
+    const st=t.stays.filter(s=>g.none?(!s.roomId||!R(t,s.roomId)):s.roomId===g.id);
+    const ln=g.none?lanes(t,"__none__"):lanes(t,g.id);
+    let at=ln.at, count=ln.count;
+    if(g.none){ // eigene Spuren für zimmerlose Aufenthalte
+      const tmp={...t,stays:st.map(s=>({...s,roomId:""}))}; const l2=lanes(tmp,""); at=l2.at; count=l2.count;
+    }
+    const L=Math.max(g.none?1:Math.max(1,g.beds),count), over=!g.none&&count>g.beds;
+    h+=`<button type="button" class="rl ${over?"warn":""}" style="grid-row:${row}/span ${L}" data-room="${g.id}" ${g.none?"disabled":""}><b>${esc(g.name)}</b><small>${g.none?"Zimmer zuteilen":over?`überbelegt (${count}/${g.beds})`:`${g.beds} Platz${g.beds===1?"":"e"}`}</small></button>`;
+    for(let l=0;l<L;l++){
+      const ov=!g.none&&l>=g.beds;
+      ns.forEach((d,i)=>{const w=wdOf(d);h+=`<button type="button" class="cell ${w>=5?"we":""} ${l===L-1?"lastlane":""} ${ov?"over":""}" style="grid-row:${row+l};grid-column:${i+2}" data-room="${g.id}" data-d="${d}" tabindex="-1" aria-label="${esc(g.name)}, ${fd(d)}"></button>`});
+    }
+    for(const s of st){
+      const a=s.from<t.start?t.start:s.from, b=s.to>t.end?t.end:s.to; if(a>=b)continue;
+      const p=P(t,s.personId); if(!p)continue;
+      if(!g.none&&at[s.id]>=g.beds)clashIds.add(s.id);
+      h+=`<button type="button" class="stay ${clashIds.has(s.id)?"clash":""}" style="--h:${p.hue};grid-row:${row+at[s.id]};grid-column:${diff(t.start,a)+2}/${diff(t.start,b)+2}" data-stay="${s.id}" title="${esc(p.name)}: ${range(s.from,s.to)}">${esc(p.name)}${diff(a,b)>2?`<small>${diff(s.from,s.to)} N.</small>`:""}</button>`;
+    }
+    row+=L;
+  }
+  const beds=t.rooms.reduce((s,r)=>s+(+r.beds||0),0);
+  h+=`<div class="rl f" style="grid-row:${row}"><b>Belegt</b><small>von ${beds} Plätzen</small></div>`;
+  ns.forEach((d,i)=>{const c=presentOn(t,d).size;h+=`<div class="foot ${c>beds?"over":c===beds&&c?"full":""}" style="grid-row:${row};grid-column:${i+2}">${c||"·"}</div>`});
+  return `<section class="section" id="sBelegung">
+    <div class="shead"><h2>Belegung</h2><div class="tools edit"><button class="btn ghost sm" id="addRoom">Zimmer bearbeiten</button><button class="btn sm" id="addStay">＋ Aufenthalt</button></div></div>
+    <div class="plan"><div class="pg" style="--n:${ns.length}">${h}</div></div>
+    <p class="hint">Jede Spalte ist eine Nacht (Anreisetag bis Tag vor Abreise). <span class="edit">Auf ein freies Feld tippen, um jemanden ins Zimmer einzutragen; auf einen Balken tippen, um ihn zu ändern.</span></p>
+  </section>`;
+}
+
+function secPeople(t,lg){
+  const rows=t.people.map(p=>{
+    const st=t.stays.filter(s=>s.personId===p.id).sort((a,b)=>a.from<b.from?-1:1);
+    const desc=st.length?st.map(s=>`${range(s.from,s.to)} · ${esc(R(t,s.roomId)?.name||"ohne Zimmer")}`).join("<br>"):`<span class="mut">kein Aufenthalt</span>`;
+    return `<tr class="click" data-person="${p.id}"><td class="nw">${pdot(t,p.id)}${wt(p)!==1?` <span class="pill">×${String(wt(p)).replace(".",",")}</span>`:""}</td><td>${desc}</td><td class="num">${lg.L[p.id].nights}</td></tr>`;
+  }).join("");
+  return `<section class="section" id="sPersonen">
+    <div class="shead"><h2>Personen</h2><div class="tools edit"><button class="btn sm" id="addPerson">＋ Person</button></div></div>
+    <div class="tablewrap"><table><thead><tr><th>Name</th><th>Aufenthalt · Zimmer</th><th class="num">Nächte</th></tr></thead>
+    <tbody>${rows||`<tr><td colspan="3" class="empty">Noch niemand eingetragen.</td></tr>`}</tbody></table></div>
+    <p class="hint">Gewichtung (z.B. Kind ×0,5) wirkt bei den Aufteilungen «nach Nächten», «gleichmässig» und «Anwesende».</p>
+  </section>`;
+}
+
+function splitDesc(t,c){
+  const ids=participants(t,c), all=ids.length===t.people.length;
+  let s=MODES[c.mode]||MODES.naechte;
+  if(c.mode==="anwesend"&&c.date)s=`Anwesende ${fd(c.date)}`;
+  if(!all)s+=` · ${ids.map(id=>esc(pname(t,id))).join(", ")}`;
+  else s+=" · alle";
+  return s;
+}
+function secCosts(t){
+  const cs=[...t.costs].sort((a,b)=>(Object.keys(CATS).indexOf(a.cat)-Object.keys(CATS).indexOf(b.cat))||((a.date||"")<(b.date||"")?-1:1));
+  let sum=0;
+  const rows=cs.map(c=>{
+    const s=shares(t,c); sum+=s.total; const [f,to]=costRange(t,c);
+    const unit=c.unit&&c.unit!=="total"?`${chf(toRp(c.amount))} ${UNITS[c.unit]}${c.unit!=="ppn"||true?` · ${c.unit==="ppn"?"":""}${diff(f,to)} N.`:""}`:"";
+    return `<tr class="click" data-cost="${c.id}">
+      <td><b>${esc(c.title)}</b><span class="meta">${CATS[c.cat]||""}${c.date?` · ${fd(c.date)}`:""}${unit?` · ${unit}`:""}</span></td>
+      <td class="nw">${c.paidBy&&P(t,c.paidBy)?pdot(t,c.paidBy):`<span class="pill warn">noch offen</span>`}</td>
+      <td>${splitDesc(t,c)}${s.err?`<span class="meta err">${esc(s.err)}</span>`:""}</td>
+      <td class="num">${chf(s.total)}</td></tr>`;
+  }).join("");
+  return `<section class="section" id="sKosten">
+    <div class="shead"><h2>Kosten</h2><div class="tools edit"><button class="btn sm" id="addCost">＋ Kosten</button></div></div>
+    <div class="chips edit" id="presets">
+      <button class="chip" data-pre="miete_n">Miete pro Nacht</button>
+      <button class="chip" data-pre="miete_w">Miete pro Woche</button>
+      <button class="chip" data-pre="miete_t">Miete pauschal</button>
+      <button class="chip" data-pre="reinigung">Schlussreinigung</button>
+      <button class="chip" data-pre="kurtaxe">Kurtaxe</button>
+      <button class="chip" data-pre="einkauf">Einkauf</button>
+    </div>
+    <div class="tablewrap"><table><thead><tr><th>Bezeichnung</th><th>Bezahlt von</th><th>Aufteilung</th><th class="num">CHF</th></tr></thead>
+    <tbody>${rows||`<tr><td colspan="4" class="empty">Noch keine Kosten erfasst.</td></tr>`}</tbody>
+    ${rows?`<tfoot><tr><td colspan="3">Total</td><td class="num">${chf(sum)}</td></tr></tfoot>`:""}</table></div>
+  </section>`;
+}
+
+function secSettle(t,lg){
+  if(!t.people.length)return `<section class="section" id="sAbrechnung"><div class="shead"><h2>Abrechnung</h2></div><p class="hint">Sobald Personen und Kosten erfasst sind, erscheint hier, wer wem wie viel zahlt.</p></section>`;
+  const r5=t.round5!==false;
+  const bal={};for(const id in lg.L)bal[id]=lg.L[id].bal;
+  const rb=r5?roundTo5(bal):bal;
+  const tr=settle(rb);
+  const naive=(()=>{let k=0;for(const c of t.costs){const s=shares(t,c);if(!s.parts||!c.paidBy)continue;for(const id in s.parts)if(id!==c.paidBy&&s.parts[id])k++}return k})();
+  const rows=t.people.map(p=>{const x=lg.L[p.id], net=x.sent-x.recv;return `<tr><td class="nw">${pdot(t,p.id)}</td><td class="num">${x.nights}</td><td class="num">${chf(x.owed)}</td><td class="num">${chf(x.paid)}</td><td class="num">${net?chf(net):"–"}</td><td class="num ${x.bal<0?"neg":x.bal>0?"pos":""}">${x.bal>0?"+":""}${chf(x.bal)}</td></tr>`}).join("");
+  const tot=Object.values(lg.L).reduce((a,x)=>({o:a.o+x.owed,p:a.p+x.paid}),{o:0,p:0});
+  const pays=[...t.payments].sort((a,b)=>(a.date||"")<(b.date||"")?1:-1).map(z=>`<div class="tr done"><div class="who">${pdot(t,z.from)}<span class="arrow">→</span>${pdot(t,z.to)}<span class="pill">${z.date?fd(z.date):"bezahlt"}</span></div><div class="amt">${chf(toRp(z.amount))}</div><button class="btn ghost sm edit" data-delpay="${z.id}">Rückgängig</button></div>`).join("");
+  return `<section class="section" id="sAbrechnung">
+    <div class="shead"><h2>Abrechnung</h2><div class="tools"><button class="btn ghost sm" id="copySum">Als Text kopieren</button></div></div>
+    ${lg.problems.length?`<p class="err">${lg.problems.length} Kostenposten nicht verrechenbar: ${lg.problems.map(x=>esc(x.c.title)).join(", ")}. Bitte Aufteilung prüfen.</p>`:""}
+    ${lg.open?`<p class="hint"><span class="pill warn">noch offen</span> CHF ${chf(lg.open)} ohne Zahler sind noch nicht in der Abrechnung enthalten.</p>`:""}
+    <div class="tablewrap"><table><thead><tr><th>Person</th><th class="num">Nächte</th><th class="num">Anteil</th><th class="num">Bezahlt</th><th class="num">Ausgeglichen</th><th class="num">Saldo</th></tr></thead>
+    <tbody>${rows}</tbody><tfoot><tr><td>Total</td><td></td><td class="num">${chf(tot.o)}</td><td class="num">${chf(tot.p)}</td><td></td><td></td></tr></tfoot></table></div>
+    <p class="hint">Saldo positiv = erhält Geld, negativ = muss zahlen.</p>
+    <h3>Ausgleichszahlungen</h3>
+    ${tr.length?`<div class="transfers">${tr.map((z,i)=>`<div class="tr"><div class="who">${pdot(t,z.from)}<span class="arrow">zahlt an</span>${pdot(t,z.to)}</div><div class="amt">CHF ${chf(z.amount)}</div><button class="btn ghost sm edit" data-pay="${i}">Als bezahlt erfassen</button></div>`).join("")}</div>
+      <p class="hint">${tr.length} Zahlung${tr.length===1?"":"en"} genügen${naive>tr.length?` (statt ${naive}, wenn jeder jeden Anteil einzeln zurückzahlt)`:""}. ${r5?"Beträge auf 5 Rappen gerundet.":"Rappengenau."} <button class="linkbtn edit" id="tgl5">${r5?"Rappengenau rechnen":"Auf 5 Rappen runden"}</button></p>`
+      :`<div class="okbox">${t.costs.length?"Alles ausgeglichen – niemand schuldet jemandem etwas.":"Noch keine Kosten erfasst."}</div>`}
+    ${pays?`<h3>Bereits bezahlt</h3><div class="transfers">${pays}</div>`:""}
+  </section>`;
+  // (Zahlungsvorschläge werden in wire() an die Buttons gebunden)
+}
+
+/* ================= Interaktion ================= */
+let lastTransfers=[];
+function wire(t){
+  const m=$("main");
+  {const lg=ledger(t),bal={};for(const id in lg.L)bal[id]=lg.L[id].bal;lastTransfers=settle(t.round5!==false?roundTo5(bal):bal)}
+  m.onclick=e=>{
+    const el=e.target.closest("button,tr.click"); if(!el)return;
+    if(el.id==="copySum")return copySummary(t);
+    if(!token){showAuth(true);return}
+    if(!loaded)return;
+    if(el.id==="addRoom")return tripDialog(t);
+    if(el.id==="addStay")return stayDialog(t,null,{});
+    if(el.id==="addPerson")return personDialog(t,null);
+    if(el.id==="addCost")return costDialog(t,null);
+    if(el.id==="tgl5"){t.round5=t.round5===false;commit();return}
+    if(el.dataset.pre)return costDialog(t,null,el.dataset.pre);
+    if(el.dataset.stay)return stayDialog(t,t.stays.find(s=>s.id===el.dataset.stay));
+    if(el.classList.contains("rl")&&el.dataset.room)return tripDialog(t);
+    if(el.classList.contains("cell"))return stayDialog(t,null,{roomId:el.dataset.room,from:el.dataset.d});
+    if(el.dataset.person)return personDialog(t,P(t,el.dataset.person));
+    if(el.dataset.cost)return costDialog(t,t.costs.find(c=>c.id===el.dataset.cost));
+    if(el.dataset.pay!=null){const z=lastTransfers[+el.dataset.pay];if(!z)return;
+      if(!confirm(`${pname(t,z.from)} hat ${pname(t,z.to)} CHF ${chf(z.amount)} bezahlt?`))return;
+      t.payments.push({id:uid(),from:z.from,to:z.to,amount:z.amount/100,date:isoToday()});commit();return}
+    if(el.dataset.delpay){if(!confirm("Diese Zahlung wieder entfernen?"))return;t.payments=t.payments.filter(z=>z.id!==el.dataset.delpay);commit();return}
+  };
+}
+
+function copySummary(t){
+  const lg=ledger(t),bal={};for(const id in lg.L)bal[id]=lg.L[id].bal;
+  const tr=settle(t.round5!==false?roundTo5(bal):bal);
+  const L=[`Abrechnung ${t.name}${t.ort?` (${t.ort})`:""}`,range(t.start,t.end),"",`Kosten total: CHF ${chf(lg.total)}`];
+  for(const p of t.people){const x=lg.L[p.id];L.push(`• ${p.name}: ${x.nights} N., Anteil ${chf(x.owed)}, bezahlt ${chf(x.paid)}`)}
+  L.push("",tr.length?"Ausgleich:":"Alles ausgeglichen.");
+  for(const z of tr)L.push(`→ ${pname(t,z.from)} zahlt ${pname(t,z.to)} CHF ${chf(z.amount)}`);
+  const txt=L.join("\n");
+  navigator.clipboard.writeText(txt).then(()=>setStatus("Abrechnung kopiert"),()=>prompt("Text kopieren:",txt));
+}
+
+/* ---------- Dialog-Gerüst ---------- */
+const dlg=$("dlg"), form=$("dlgForm");
+function openDlg(title,body,{onSave,onDelete,delLabel="Löschen",saveLabel="Speichern"}={}){
+  form.innerHTML=`<div class="dh"><h2>${title}</h2><button type="button" class="x" data-x aria-label="Schliessen">×</button></div>
+    <div class="db">${body}</div>
+    <div class="df">${onDelete?`<button type="button" class="btn danger" data-del>${delLabel}</button>`:""}<div class="r"><button type="button" class="btn ghost" data-x>Abbrechen</button><button type="submit" class="btn">${saveLabel}</button></div></div>`;
+  form.onsubmit=e=>{e.preventDefault();if(onSave&&onSave()===false)return;dlg.close()};
+  form.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>dlg.close());
+  const d=form.querySelector("[data-del]"); if(d)d.onclick=()=>{if(onDelete()!==false)dlg.close()};
+  dlg.showModal();
+  const f=form.querySelector(".db input:not([type=hidden]),.db select"); if(f&&matchMedia("(hover:hover)").matches)f.focus();
+}
+const F=n=>form.elements[n];
+function fail(msg){let e=form.querySelector(".db .err.main");if(!e){e=document.createElement("div");e.className="err main";form.querySelector(".db").appendChild(e)}e.textContent=msg;e.scrollIntoView({block:"nearest"});return false}
+dlg.addEventListener("click",e=>{if(e.target===dlg)dlg.close()});
+
+/* ---------- Ferien (inkl. Zimmer) ---------- */
+function tripDialog(t){
+  const isNew=!t;
+  const today=isoToday();
+  const cur=t||{name:"",ort:"",start:addDays(today,30),end:addDays(today,37),rooms:[{id:uid(),name:"Zimmer 1",beds:2},{id:uid(),name:"Zimmer 2",beds:2}]};
+  let rooms=cur.rooms.map(r=>({...r}));
+  const roomRows=()=>rooms.map((r,i)=>`<div class="room"><input class="inp" data-rn="${i}" value="${esc(r.name)}" placeholder="Zimmername" aria-label="Zimmername"><input class="inp" data-rb="${i}" type="number" min="0" max="20" value="${r.beds}" aria-label="Schlafplätze" title="Schlafplätze"><button type="button" class="icon" data-rd="${i}" aria-label="Zimmer entfernen">−</button></div>`).join("");
+  openDlg(isNew?"Neue Ferien":"Ferien bearbeiten",`
+    <label class="fl"><span>Name</span><input name="name" required value="${esc(cur.name)}" placeholder="z.B. Chalet Engadin"></label>
+    <label class="fl"><span>Ort / Unterkunft</span><input name="ort" value="${esc(cur.ort||"")}" placeholder="z.B. Pontresina"></label>
+    <div class="row2"><label class="fl"><span>Anreise</span><input type="date" name="start" value="${cur.start}"></label><label class="fl"><span>Abreise</span><input type="date" name="end" value="${cur.end}"></label></div>
+    <div class="fl"><span>Zimmer und Schlafplätze</span>
+      <div class="rooms" id="rooms">${roomRows()}</div>
+      <div><button type="button" class="btn ghost sm" id="rAdd">＋ Zimmer</button></div>
+    </div>`,{
+    onSave(){
+      const name=F("name").value.trim(), s=F("start").value, e=F("end").value;
+      if(!name)return fail("Bitte einen Namen eingeben.");
+      if(!s||!e||e<=s)return fail("Die Abreise muss nach der Anreise liegen.");
+      sync(); rooms=rooms.filter(r=>r.name.trim()||r.beds>0).map(r=>({id:r.id,name:r.name.trim()||"Zimmer",beds:Math.max(0,parseInt(r.beds)||0)}));
+      if(isNew){const nt={id:uid(),name,ort:F("ort").value.trim(),start:s,end:e,rooms,people:[],stays:[],costs:[],payments:[],round5:true};db.trips.push(nt);curId=nt.id;LS.set("ferienhausTrip",curId)}
+      else{
+        const kept=new Set(rooms.map(r=>r.id));
+        for(const st of t.stays)if(st.roomId&&!kept.has(st.roomId))st.roomId="";
+        Object.assign(t,{name,ort:F("ort").value.trim(),start:s,end:e,rooms});
+      }
+      commit();
+    },
+    onDelete:isNew?null:()=>{if(!confirm(`«${t.name}» mit allen Personen und Kosten löschen?`))return false;db.trips=db.trips.filter(x=>x.id!==t.id);curId=(db.trips[0]||{}).id||"";commit()},
+    delLabel:"Ferien löschen"
+  });
+  const box=$("rooms");
+  const sync=()=>{box.querySelectorAll("[data-rn]").forEach(i=>rooms[+i.dataset.rn].name=i.value);box.querySelectorAll("[data-rb]").forEach(i=>rooms[+i.dataset.rb].beds=i.value)};
+  $("rAdd").onclick=()=>{sync();rooms.push({id:uid(),name:`Zimmer ${rooms.length+1}`,beds:2});box.innerHTML=roomRows()};
+  box.onclick=e=>{const b=e.target.closest("[data-rd]");if(!b)return;sync();const r=rooms[+b.dataset.rd];
+    if(t&&t.stays.some(s=>s.roomId===r.id)&&!confirm(`In «${r.name}» sind Personen eingetragen. Trotzdem entfernen? Sie werden «ohne Zimmer» geführt.`))return;
+    rooms.splice(+b.dataset.rd,1);box.innerHTML=roomRows()};
+  F("start").onchange=()=>{if(F("end").value<=F("start").value)F("end").value=addDays(F("start").value,7)};
+}
+
+/* ---------- Person ---------- */
+function personDialog(t,p){
+  const isNew=!p, w=p?wt(p):1;
+  const preset=[1,.5,0].includes(w)?String(w):"x";
+  const st=p?t.stays.filter(s=>s.personId===p.id).sort((a,b)=>a.from<b.from?-1:1):[];
+  openDlg(isNew?"Person hinzufügen":esc(p.name),`
+    <label class="fl"><span>Name</span><input name="name" required value="${esc(p?.name||"")}" autocomplete="off"></label>
+    <div class="fl"><span>Gewichtung bei Kosten</span>
+      <div class="seg">${[["1","Erwachsen ×1"],["0.5","Kind ×½"],["0","Gratis ×0"],["x","eigene"]].map(([v,l])=>`<label><input type="radio" name="wp" value="${v}" ${preset===v?"checked":""}>${l}</label>`).join("")}</div>
+      <input class="inp" name="wx" type="number" step="0.05" min="0" max="5" value="${w}" ${preset==="x"?"":"hidden"} aria-label="Eigene Gewichtung">
+    </div>
+    ${isNew?`<div class="row2"><label class="fl"><span>Anreise</span><input type="date" name="from" value="${t.start}" min="${t.start}" max="${t.end}"></label><label class="fl"><span>Abreise</span><input type="date" name="to" value="${t.end}" min="${t.start}" max="${t.end}"></label></div>
+      <label class="fl"><span>Zimmer</span><select name="room">${roomOpts(t,"")}</select></label>`
+    :`<div class="fl"><span>Aufenthalte</span><div class="plist">${st.map(s=>`<div class="prow"><span></span><span>${range(s.from,s.to)} · ${esc(R(t,s.roomId)?.name||"ohne Zimmer")}</span><span class="sh">${diff(s.from,s.to)} N.</span><button type="button" class="btn ghost sm" data-es="${s.id}">Ändern</button></div>`).join("")||`<div class="prow"><span></span><span class="mut">kein Aufenthalt</span></div>`}</div>
+      <div><button type="button" class="btn ghost sm" id="pAddStay">＋ weiterer Aufenthalt</button></div></div>`}`,{
+    onSave(){
+      const name=F("name").value.trim(); if(!name)return fail("Bitte einen Namen eingeben.");
+      if(t.people.some(x=>x.name.toLowerCase()===name.toLowerCase()&&x!==p))return fail("Diesen Namen gibt es schon.");
+      const wp=form.querySelector("[name=wp]:checked").value, weight=wp==="x"?Math.max(0,parseFloat(F("wx").value)||0):+wp;
+      if(isNew){
+        const f=F("from").value,to=F("to").value;
+        if(f&&to&&to<=f)return fail("Die Abreise muss nach der Anreise liegen.");
+        const np={id:uid(),name,weight,hue:hueOf(t)};t.people.push(np);
+        if(f&&to)t.stays.push({id:uid(),personId:np.id,roomId:F("room").value,from:f,to});
+      }else Object.assign(p,{name,weight});
+      commit();
+    },
+    onDelete:isNew?null:()=>{
+      const used=t.costs.some(c=>c.paidBy===p.id)||t.payments.some(z=>z.from===p.id||z.to===p.id);
+      if(used){alert(`${p.name} hat Kosten bezahlt oder Zahlungen. Zuerst diese Einträge ändern.`);return false}
+      if(!confirm(`${p.name} entfernen?`))return false;
+      t.people=t.people.filter(x=>x!==p);t.stays=t.stays.filter(s=>s.personId!==p.id);
+      for(const c of t.costs){if(c.who)c.who=c.who.filter(id=>id!==p.id);if(c.pct)delete c.pct[p.id]}
+      commit();
+    },delLabel:"Person entfernen"
+  });
+  form.querySelectorAll("[name=wp]").forEach(r=>r.onchange=()=>{F("wx").hidden=r.value!=="x"||!r.checked;if(r.checked&&r.value!=="x")F("wx").value=r.value});
+  form.querySelectorAll("[data-es]").forEach(b=>b.onclick=()=>{dlg.close();stayDialog(t,t.stays.find(s=>s.id===b.dataset.es))});
+  if($("pAddStay"))$("pAddStay").onclick=()=>{dlg.close();stayDialog(t,null,{personId:p.id})};
+}
+function roomOpts(t,sel){return t.rooms.map(r=>`<option value="${r.id}" ${r.id===sel?"selected":""}>${esc(r.name)} (${r.beds} Pl.)</option>`).join("")+`<option value="" ${!sel?"selected":""}>ohne Zimmer</option>`}
+
+/* ---------- Aufenthalt ---------- */
+function stayDialog(t,s,pre={}){
+  const isNew=!s;
+  const cur=s||{personId:pre.personId||"",roomId:pre.roomId??(t.rooms[0]?.id||""),from:pre.from||t.start,to:pre.from?(()=>{let e=t.end;for(const x of t.stays){}return e})():t.end};
+  if(isNew&&pre.from){ // Standard: bis Ferienende
+    cur.to=t.end;
+  }
+  const opts=t.people.map(p=>`<option value="${p.id}" ${p.id===cur.personId?"selected":""}>${esc(p.name)}</option>`).join("");
+  openDlg(isNew?"Aufenthalt eintragen":"Aufenthalt ändern",`
+    <label class="fl"><span>Person</span><select name="person">${isNew?`<option value="__new" ${!cur.personId&&!t.people.length?"selected":""}>＋ Neue Person …</option>`:""}${opts}</select></label>
+    <label class="fl" id="npw" hidden><span>Name neue Person</span><input name="pname" autocomplete="off" placeholder="Vorname"></label>
+    <label class="fl"><span>Zimmer</span><select name="room">${roomOpts(t,cur.roomId)}</select></label>
+    <div class="row2"><label class="fl"><span>Anreise</span><input type="date" name="from" value="${cur.from}" min="${t.start}" max="${addDays(t.end,-1)}"></label><label class="fl"><span>Abreise</span><input type="date" name="to" value="${cur.to}" min="${addDays(t.start,1)}" max="${t.end}"></label></div>
+    <div class="preview" id="stInfo"></div>`,{
+    onSave(){
+      let pid=F("person").value; const f=F("from").value,to=F("to").value,room=F("room").value;
+      if(!f||!to||to<=f)return fail("Die Abreise muss nach der Anreise liegen.");
+      if(f<t.start||to>t.end)return fail(`Aufenthalt muss innerhalb ${range(t.start,t.end)} liegen.`);
+      if(pid==="__new"){const n=F("pname").value.trim();if(!n)return fail("Bitte Namen der neuen Person eingeben.");
+        if(t.people.some(x=>x.name.toLowerCase()===n.toLowerCase()))return fail("Diesen Namen gibt es schon – oben auswählen.");
+        const np={id:uid(),name:n,weight:1,hue:hueOf(t)};t.people.push(np);pid=np.id}
+      if(t.stays.some(x=>x!==s&&x.personId===pid&&x.from<to&&f<x.to))return fail(`${pname(t,pid)} ist in dieser Zeit schon eingetragen.`);
+      if(isNew)t.stays.push({id:uid(),personId:pid,roomId:room,from:f,to});
+      else Object.assign(s,{personId:pid,roomId:room,from:f,to});
+      commit();
+    },
+    onDelete:isNew?null:()=>{t.stays=t.stays.filter(x=>x!==s);commit()},delLabel:"Aufenthalt löschen"
+  });
+  const upd=()=>{
+    $("npw").hidden=F("person").value!=="__new";
+    const f=F("from").value,to=F("to").value,r=R(t,F("room").value);
+    let msg=f&&to&&to>f?`<span>${diff(f,to)} Nächte</span>`:"";
+    if(r&&f&&to&&to>f){let mx=0;for(const n of nights(f,to)){const c=t.stays.filter(x=>x!==s&&x.roomId===r.id&&x.from<=n&&n<x.to).length;mx=Math.max(mx,c)}
+      msg+=mx>=r.beds?`<span class="err">${esc(r.name)} ist teilweise voll (${mx}/${r.beds})</span>`:`<span>${esc(r.name)}: noch ${r.beds-mx} Platz frei</span>`}
+    $("stInfo").innerHTML=msg;
+  };
+  ["person","room","from","to"].forEach(n=>F(n).addEventListener("change",upd));
+  if(isNew&&!t.people.length)F("person").value="__new";
+  upd();
+  if(!$("npw").hidden&&matchMedia("(hover:hover)").matches)F("pname").focus();
+}
+
+/* ---------- Kosten ---------- */
+const PRESETS={
+  miete_n:{title:"Miete",cat:"unterkunft",unit:"nacht",mode:"naechte"},
+  miete_w:{title:"Miete",cat:"unterkunft",unit:"woche",mode:"naechte"},
+  miete_t:{title:"Miete",cat:"unterkunft",unit:"total",mode:"naechte"},
+  reinigung:{title:"Schlussreinigung",cat:"neben",unit:"total",mode:"gleich"},
+  kurtaxe:{title:"Kurtaxe",cat:"neben",unit:"ppn",mode:"naechte"},
+  einkauf:{title:"Einkauf",cat:"einkauf",unit:"total",mode:"anwesend",date:"today"}
+};
+function costDialog(t,c,preKey){
+  if(!t.people.length){alert("Zuerst Personen eintragen.");return}
+  const isNew=!c, pre=PRESETS[preKey]||{};
+  let date=pre.date==="today"?(isoToday()>=t.start&&isoToday()<t.end?isoToday():t.start):"";
+  const cur=c?JSON.parse(JSON.stringify(c)):{title:pre.title||"",cat:pre.cat||"sonst",amount:"",unit:pre.unit||"total",mode:pre.mode||"naechte",who:[],pct:{},paidBy:"",date,from:"",to:""};
+  const sel=new Set(participants(t,cur));
+  openDlg(isNew?"Kosten erfassen":"Kosten ändern",`
+    <div class="row2"><label class="fl"><span>Bezeichnung</span><input name="title" value="${esc(cur.title)}" placeholder="z.B. Miete, Coop, Skipass"></label>
+    <label class="fl"><span>Kategorie</span><select name="cat">${Object.entries(CATS).map(([k,v])=>`<option value="${k}" ${k===cur.cat?"selected":""}>${v}</option>`).join("")}</select></label></div>
+    <div class="row2"><label class="fl"><span>Betrag CHF</span><input name="amount" inputmode="decimal" value="${cur.amount===""?"":String(cur.amount)}" placeholder="0.00"></label>
+    <label class="fl"><span>Einheit</span><select name="unit">${Object.entries(UNITS).map(([k,v])=>`<option value="${k}" ${k===cur.unit?"selected":""}>${v}</option>`).join("")}</select></label></div>
+    <div class="row2" id="rng"><label class="fl"><span>Von (Nacht)</span><input type="date" name="from" value="${cur.from||t.start}" min="${t.start}" max="${t.end}"></label><label class="fl"><span>Bis (Abreise)</span><input type="date" name="to" value="${cur.to||t.end}" min="${t.start}" max="${t.end}"></label></div>
+    <div class="row2"><label class="fl"><span>Bezahlt von</span><select name="paidBy"><option value="">– noch offen –</option>${t.people.map(p=>`<option value="${p.id}" ${p.id===cur.paidBy?"selected":""}>${esc(p.name)}</option>`).join("")}</select></label>
+    <label class="fl"><span>Datum</span><input type="date" name="date" value="${cur.date||""}"></label></div>
+    <div class="fl"><span>Aufteilung</span>
+      <div class="seg">${Object.entries(MODES).map(([k,v])=>`<label><input type="radio" name="mode" value="${k}" ${k===cur.mode?"checked":""}>${v}</label>`).join("")}</div>
+      <p class="hint" id="modeHint"></p>
+    </div>
+    <div class="fl"><span>Wer bezahlt mit</span>
+      <div class="plist" id="plist">${t.people.map(p=>`<label class="prow" data-pid="${p.id}"><input type="checkbox" name="who" value="${p.id}" ${sel.has(p.id)?"checked":""}><span>${pdot(t,p.id)}</span><input type="number" name="pct_${p.id}" step="0.1" min="0" max="100" value="${(cur.pct||{})[p.id]??""}" placeholder="%" aria-label="Prozent ${esc(p.name)}"><span class="sh" data-sh="${p.id}"></span></label>`).join("")}</div>
+      <div class="chips"><button type="button" class="chip" id="wAll">Alle</button><button type="button" class="chip" id="wNone">Keine</button><button type="button" class="chip" id="pEven">% gleichmässig</button></div>
+    </div>
+    <div class="preview"><span>Total</span><b id="cTot">–</b></div>`,{
+    onSave(){
+      const x=read(); if(!x.title)return fail("Bitte eine Bezeichnung eingeben.");
+      if(!(toRp(x.amount)>0))return fail("Bitte einen Betrag eingeben.");
+      if(!participants(t,{...x,who:x.who.length?x.who:["-"]}).length)return fail("Mindestens eine Person auswählen.");
+      if(x.mode==="anwesend"&&!x.date)return fail("Für «Anwesende» bitte ein Datum wählen.");
+      const s=shares(t,x); if(s.err)return fail(s.err);
+      if(isNew)t.costs.push({id:uid(),...x}); else Object.assign(c,x);
+      commit();
+    },
+    onDelete:isNew?null:()=>{if(!confirm(`«${c.title}» löschen?`))return false;t.costs=t.costs.filter(x=>x!==c);commit()},delLabel:"Kosten löschen"
+  });
+  function read(){
+    const unit=F("unit").value, mode=form.querySelector("[name=mode]:checked").value;
+    const who=[...form.querySelectorAll("[name=who]:checked")].map(i=>i.value);
+    const pct={};for(const p of t.people){const v=F("pct_"+p.id).value;if(v!==""&&who.includes(p.id))pct[p.id]=parseFloat(v)||0}
+    const ranged=unit!=="total";
+    return {title:F("title").value.trim(),cat:F("cat").value,amount:F("amount").value.trim().replace(",","."),unit,mode,
+      who:who.length===t.people.length?[]:who,pct:mode==="prozent"?pct:{},paidBy:F("paidBy").value,date:F("date").value,
+      from:ranged&&F("from").value!==t.start?F("from").value:"",to:ranged&&F("to").value!==t.end?F("to").value:""};
+  }
+  const HINT={naechte:"Anteil nach Anzahl Nächten im Zeitraum (× Gewichtung). Wer länger bleibt, zahlt mehr.",
+    gleich:"Jede ausgewählte Person zahlt gleich viel (× Gewichtung), egal wie lange sie bleibt.",
+    anwesend:"Nur wer in der Nacht des Datums da ist, zahlt mit – gleichmässig (× Gewichtung). Ideal für Einkäufe.",
+    prozent:"Eigene Prozentanteile pro Person, Summe 100 %."};
+  const upd=()=>{
+    const x=read(), ranged=x.unit!=="total";
+    $("rng").hidden=!ranged;
+    $("modeHint").textContent=HINT[x.mode];
+    form.querySelectorAll("[name^=pct_]").forEach(i=>i.hidden=x.mode!=="prozent");
+    const s=shares(t,{...x,who:x.who.length?x.who:t.people.length===form.querySelectorAll("[name=who]:checked").length?[]:["-"]});
+    $("cTot").textContent="CHF "+chf(s.total);
+    form.querySelectorAll(".prow").forEach(r=>{const id=r.dataset.pid,on=r.querySelector("[name=who]").checked;r.classList.toggle("off",!on);
+      r.querySelector("[data-sh]").textContent=s.parts&&on?chf(s.parts[id]||0):""});
+    let e=form.querySelector(".err.live");if(!e){e=document.createElement("div");e.className="err live";$("cTot").parentNode.after(e)}
+    e.textContent=s.err&&toRp(x.amount)>0?s.err:"";
+  };
+  form.addEventListener("input",upd);form.addEventListener("change",upd);
+  $("wAll").onclick=()=>{form.querySelectorAll("[name=who]").forEach(i=>i.checked=true);upd()};
+  $("wNone").onclick=()=>{form.querySelectorAll("[name=who]").forEach(i=>i.checked=false);upd()};
+  $("pEven").onclick=()=>{const on=[...form.querySelectorAll("[name=who]:checked")].map(i=>i.value);if(!on.length)return;
+    form.querySelector("[name=mode][value=prozent]").checked=true;
+    const base=Math.floor(10000/on.length)/100;let rest=+(100-base*on.length).toFixed(2);
+    on.forEach((id,i)=>F("pct_"+id).value=(i===0?+(base+rest).toFixed(2):base));upd()};
+  upd();
+}
+
+/* ================= GitHub lesen / schreiben ================= */
+const hhmm=()=>{const d=new Date();return pad(d.getHours())+":"+pad(d.getMinutes())};
+function setStatus(t,warn){const s=$("status");s.textContent=t;s.classList.toggle("warn",!!warn)}
+const b64enc=s=>btoa(unescape(encodeURIComponent(s)));
+const b64dec=s=>decodeURIComponent(escape(atob(s.replace(/\s/g,""))));
+function hdr(json,tk=token){const h={"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"};if(tk)h.Authorization="Bearer "+tk;if(json)h["Content-Type"]="application/json";return h}
+const fileUrl=`${API}/contents/${FILE}`;
+function normalize(d){
+  const trips=Array.isArray(d&&d.trips)?d.trips:[];
+  for(const t of trips){for(const k of ["rooms","people","stays","costs","payments"])if(!Array.isArray(t[k]))t[k]=[];
+    t.people.forEach((p,i)=>{if(typeof p.hue!=="number")p.hue=HUES[i%HUES.length]})}
+  return {trips};
+}
+async function fetchDb(){
+  const r=await fetch(`${fileUrl}?ref=${BRANCH}&t=${Date.now()}`,{headers:hdr(),cache:"no-store"});
+  if(r.status===404)return {sha:null,doc:{trips:[]}};
+  if(!r.ok){const e=new Error("HTTP "+r.status);e.status=r.status;throw e}
+  const j=await r.json(); return {sha:j.sha,doc:JSON.parse(b64dec(j.content))};
+}
+let dirty=false,inflight=0,saveT=null,chain=Promise.resolve();
+async function load(quiet){
+  if(!quiet)setStatus("Wird geladen …");
+  try{
+    const {sha:s,doc}=await fetchDb();
+    if(dirty||inflight)return;
+    sha=s; db=normalize(doc); loaded=true;
+    if(!T())curId=([...db.trips].sort((a,b)=>a.start<b.start?1:-1)[0]||{}).id||"";
+    if(!dlg.open)render();
+    setStatus((token?"Synchron ":"Nur Ansicht · Stand ")+hhmm());
+  }catch(e){
+    setStatus(e.status===401?"Token ungültig oder abgelaufen":e.status===403?"GitHub-Limit erreicht, bitte später nochmals laden":"Laden fehlgeschlagen ("+(e.status||"offline")+")",true);
+    if(e.status===401)showAuth(true,"Der gespeicherte Token wurde abgelehnt. Bitte neuen Token eingeben.");
+  }
+}
+async function put(){
+  const body={trips:db.trips,updated:new Date().toISOString()};
+  const content=b64enc(JSON.stringify(body,null,1)+"\n");
+  for(let i=0;i<3;i++){
+    const r=await fetch(fileUrl,{method:"PUT",headers:hdr(true),body:JSON.stringify({message:"Ferienhaus aktualisiert",content,branch:BRANCH,...(sha?{sha}:{})})});
+    if(r.ok){sha=(await r.json()).content.sha;return}
+    if(r.status===409||r.status===422){try{sha=(await fetchDb()).sha}catch(_){}continue}
+    const e=new Error("HTTP "+r.status);e.status=r.status;throw e;
+  }
+  throw new Error("Konflikt");
+}
+function write(){
+  dirty=false;inflight++;
+  chain=chain.then(put).then(()=>setStatus("Gespeichert "+hhmm()))
+    .catch(e=>{dirty=true;
+      if(e.status===401||e.status===403||e.status===404){setStatus("Keine Schreibrechte: Token prüfen",true);showAuth(true,"Speichern abgelehnt ("+e.status+"). Token prüfen: Zugriff auf ferienhaus mit «Contents: Read and write».")}
+      else setStatus("Speichern fehlgeschlagen ("+(e.status||e.message)+"), nächste Änderung versucht es erneut",true)})
+    .finally(()=>{inflight--});
+}
+function commit(){
+  if(curId)LS.set("ferienhausTrip",curId);
+  render();
+  if(!token){showAuth(true);return}
+  dirty=true;setStatus("Speichert …");clearTimeout(saveT);saveT=setTimeout(()=>{saveT=null;write()},700);
+}
+function flushNow(){if(saveT){clearTimeout(saveT);saveT=null;write()}}
+addEventListener("pagehide",flushNow);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")flushNow();else if(!dirty&&!inflight&&!dlg.open)load(true)});
+
+/* ================= Token ================= */
+function showAuth(show,msg){
+  $("auth").hidden=!show;$("tokMsg").textContent=msg||"";$("tokMsg").classList.toggle("err",!!msg);
+  if(show&&msg!==undefined){$("auth").scrollIntoView({block:"start",behavior:"smooth"})}
+}
+function updateWho(){
+  document.body.classList.toggle("ro",!token);
+  $("tokClear").hidden=!token;$("who").textContent=token?"Bearbeiten aktiv auf diesem Gerät.":"";
+  $("auth").hidden=!!token;
+}
+async function canWrite(t){
+  try{const r=await fetch(API,{headers:hdr(false,t),cache:"no-store"});if(!r.ok)return r.status;const j=await r.json();return j.permissions&&j.permissions.push?true:403}catch(_){return 0}
+}
+$("tokSave").onclick=async()=>{
+  const t=$("tok").value.trim();if(!t)return;
+  $("tokSave").disabled=true;$("tokMsg").classList.remove("err");$("tokMsg").textContent="Prüfe Token …";
+  const ok=await canWrite(t);
+  if(ok===true){token=t;LS.set(TK,t);$("tok").value="";updateWho();render();load()}
+  else{$("tokMsg").textContent=ok===401?"Token ungültig.":ok===403?"Token hat keine Schreibrechte auf ferienhaus.":"Kein Zugriff auf das Repository ("+(ok||"offline")+").";$("tokMsg").classList.add("err")}
+  $("tokSave").disabled=false;
+};
+$("tok").addEventListener("keydown",e=>{if(e.key==="Enter")$("tokSave").click()});
+$("tokClear").onclick=()=>{if(!confirm("Token auf diesem Gerät entfernen? Danach nur noch Ansicht."))return;token="";LS.del(TK);updateWho();render();setStatus("Nur Ansicht")};
+
+/* ================= Start ================= */
+$("tripSel").onchange=e=>{curId=e.target.value;LS.set("ferienhausTrip",curId);render();scrollTo({top:0})};
+$("tripNew").onclick=()=>token?tripDialog():showAuth(true,"");
+$("tripEdit").onclick=()=>token?tripDialog(T()):showAuth(true,"");
+(async()=>{
+  // Bestehenden Ferienplaner-Token mitbenutzen, falls er auch für dieses Repo gilt
+  if(!token){const old=LS.get("ghToken");if(old&&await canWrite(old)===true){token=old;LS.set(TK,old)}}
+  updateWho();render();load();
+})();
+</script>
+</body>
+</html>
