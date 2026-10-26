@@ -103,6 +103,7 @@ body:not(.ro) .cell:hover{background:color-mix(in srgb,var(--accent) 14%,transpa
 .stay{z-index:2;margin:5px 2px;border-radius:6px;border:1px solid hsl(var(--h) var(--pl-s) var(--pl-l));background:hsl(var(--h) var(--pb-s) var(--pb-l));color:hsl(var(--h) var(--pi-s) var(--pi-l));font-size:.78rem;font-weight:600;text-align:left;padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
 .stay small{font-weight:400;opacity:.8}
 .stay .emo{letter-spacing:-.12em;font-size:.85rem}
+.stay .plus{font-weight:400;opacity:.7;margin:0 -2px}
 .stay.clash{outline:2px solid var(--neg-ink);outline-offset:-2px}
 .foot{border-left:1px dashed var(--line);font-family:var(--f-mono);font-size:.72rem;display:flex;align-items:center;justify-content:center;color:var(--muted);border-top:1px solid var(--line)}
 .foot.full{color:var(--ink);font-weight:500}
@@ -508,7 +509,7 @@ function secPlan(t){
       const a=s.from<t.start?t.start:s.from, b=s.to>t.end?t.end:s.to; if(a>=b)continue;
       const p=P(t,s.personId); if(!p)continue;
       if(!g.none&&at[s.id]>=g.beds)clashIds.add(s.id);
-      h+=`<button type="button" class="stay ${clashIds.has(s.id)?"clash":""}" style="--h:${p.hue};grid-row:${row+at[s.id]};grid-column:${col(a)+1}/${col(b)+1}" data-stay="${s.id}" title="${esc(p.name)}: ${range(s.from,s.to)}">${esc(p.name)}${kidsOf(p)?`<span class="emo" title="mit ${kidsTxt(kidsOf(p))}">${"🧒".repeat(Math.min(kidsOf(p),6))}</span>`:""}${dogs(p)?`<span class="emo" title="${dogs(p)} Hund${dogs(p)>1?"e":""}">${"🐕".repeat(Math.min(dogs(p),6))}</span>`:""}${diff(a,b)>2?`<small>${diff(s.from,s.to)} N.</small>`:""}</button>`;
+      h+=`<button type="button" class="stay ${clashIds.has(s.id)?"clash":""}" style="--h:${p.hue};grid-row:${row+at[s.id]};grid-column:${col(a)+1}/${col(b)+1}" data-stay="${s.id}" title="${esc(p.name)}: ${range(s.from,s.to)}">${esc(p.name)}${dogs(p)?`<span class="plus">+</span><span class="emo" title="${dogs(p)} Hund${dogs(p)>1?"e":""}">${"🐕".repeat(Math.min(dogs(p),6))}</span>`:""}${kidsOf(p)?`<span class="plus">+</span><span class="emo" title="mit ${kidsTxt(kidsOf(p))}">${"🧒".repeat(Math.min(kidsOf(p),6))}</span>`:""}${diff(a,b)>2?`<small>${diff(s.from,s.to)} N.</small>`:""}</button>`;
     }
     row+=L;
   }
