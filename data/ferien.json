@@ -67,6 +67,12 @@
      "child": false,
      "kids": 1,
      "dogs": 0
+    },
+    {
+     "id": "2p91o3p",
+     "name": "Tom",
+     "weight": 1,
+     "hue": 46
     }
    ],
    "stays": [
@@ -87,6 +93,13 @@
     {
      "id": "qadq1ad",
      "personId": "100njp9",
+     "roomId": "xew2025",
+     "from": "2026-11-13",
+     "to": "2026-11-15"
+    },
+    {
+     "id": "g6nlyc4",
+     "personId": "2p91o3p",
      "roomId": "xew2025",
      "from": "2026-11-13",
      "to": "2026-11-15"
@@ -147,5 +160,5 @@
    }
   }
  ],
- "updated": "2026-10-26T16:19:18.178Z"
+ "updated": "2026-10-26T16:22:00.654Z"
 }
