@@ -142,6 +142,10 @@ td .meta{display:block;font-size:.76rem;color:var(--muted)}
 .box ol{padding-left:1.3em;display:flex;flex-direction:column;gap:3px}
 .box b{color:var(--ink)}
 .box.auth{border-color:var(--accent)}
+.box.tarif{gap:8px;padding:12px 14px}
+.box.tarif input,.box.tarif select{border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:7px 9px;font-size:.92rem;font-weight:400;width:100%;min-width:0;font-family:var(--f-mono)}
+.box.tarif select{font-family:var(--f-body)}
+.box.tarif input[readonly]{border-style:dashed}
 .tokrow{display:flex;flex-wrap:wrap;gap:8px}
 .tokrow input{flex:1 1 260px;min-width:0;font-family:var(--f-mono);font-size:.82rem;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:8px 10px}
 .toast{font-size:.82rem;color:var(--pos-ink);min-height:1.2em}
@@ -516,10 +520,10 @@ function secPeople(t,lg){
     return `<tr class="click" data-person="${p.id}"><td class="nw">${pdot(t,p.id)}${isKid(p)?` <span class="pill">Kind</span>`:""}${kidsOf(p)?` <span class="pill">+ ${kidsTxt(kidsOf(p))}</span>`:""}${dogs(p)?` <span class="pill">🐕 ${dogs(p)} Hund${dogs(p)>1?"e":""}</span>`:""}${wt(p)!==1?` <span class="pill">×${String(wt(p)).replace(".",",")}</span>`:""}</td><td>${desc}</td><td class="num">${lg.L[p.id].nights}</td>${hasFees(t)?`<td class="num">${fe.total?chf(fe.total)+`<span class="meta">${fe.txt.join(" · ")}</span>`:"–"}</td>`:""}</tr>`;
   }).join("");
   return `<section class="section" id="sPersonen">
-    <div class="shead"><h2>Personen</h2><div class="tools edit"><button class="btn ghost sm" id="feeBtn">Zuschläge Kind/Hund</button><button class="btn sm" id="addPerson">＋ Person</button></div></div>
+    <div class="shead"><h2>Personen</h2><div class="tools edit"><button class="btn sm" id="addPerson">＋ Person</button></div></div>
     <div class="tablewrap"><table><thead><tr><th>Name</th><th>Aufenthalt · Zimmer</th><th class="num">Nächte</th>${hasFees(t)?`<th class="num">Zuschläge CHF</th>`:""}</tr></thead>
     <tbody>${rows||`<tr><td colspan="4" class="empty">Noch niemand eingetragen.</td></tr>`}</tbody></table></div>
-    ${hasFees(t)?`<p class="hint">Zuschläge: ${[toRp(t.fees.kidNight)?`Kind ${chf(toRp(t.fees.kidNight))}/Nacht`:"",toRp(t.fees.dogNight)?`Hund ${chf(toRp(t.fees.dogNight))}/Nacht`:"",toRp(t.fees.dogFlat)?`Hund ${chf(toRp(t.fees.dogFlat))} pauschal`:""].filter(Boolean).join(" · ")} · bezahlt von ${t.fees.paidBy&&P(t,t.fees.paidBy)?esc(pname(t,t.fees.paidBy)):`<span class="pill warn">noch offen</span>`}. Werden automatisch der jeweiligen Person belastet.</p>`:""}
+    ${hasFees(t)?`<p class="hint">Zuschläge: ${[toRp(t.fees.kidNight)?`Kind ${chf(toRp(t.fees.kidNight))}/Nacht`:"",toRp(t.fees.dogNight)?`Hund ${chf(toRp(t.fees.dogNight))}/Nacht`:"",toRp(t.fees.dogFlat)?`Hund ${chf(toRp(t.fees.dogFlat))} pauschal`:""].filter(Boolean).join(" · ")} · Tarife unter <a href="#sKosten">Kosten</a>.</p>`:""}
     <p class="hint">Gewichtung (z.B. Kind ×0,5) wirkt bei den Aufteilungen «nach Nächten», «gleichmässig» und «Anwesende».</p>
   </section>`;
 }
@@ -531,6 +535,18 @@ function splitDesc(t,c){
   if(!all)s+=` · ${ids.map(id=>esc(pname(t,id))).join(", ")}`;
   else s+=" · alle";
   return s;
+}
+function tarifBox(t){
+  const f=t.fees||{}, ro=!token;
+  const inp=(k,l)=>`<label class="fl"><span>${l}</span><input data-fee="${k}" inputmode="decimal" value="${esc(f[k]??"")}" placeholder="–" ${ro?"readonly":""}></label>`;
+  const rows=t.people.map(p=>({p,x:personFee(t,p)})).filter(r=>r.x.total);
+  const any=hasFees(t);
+  return `<div class="box tarif">
+    <div class="shead"><h3 style="margin:0">Tarife Kind / Hund</h3><span class="pill">nur Info – berechnet bei den Personen</span></div>
+    <div class="row">${inp("kidNight","Kind pro Nacht")}${inp("dogNight","🐕 pro Nacht pro Hund")}${inp("dogFlat","🐕 pauschal pro Hund")}
+      <label class="fl"><span>Bezahlt von</span><select data-fee="paidBy" ${ro?"disabled":""}><option value="">– noch offen –</option>${t.people.map(p=>`<option value="${p.id}" ${p.id===f.paidBy?"selected":""}>${esc(p.name)}</option>`).join("")}</select></label></div>
+    <p class="hint">${!any?"Noch keine Tarife eingetragen.":rows.length?"Berechnet: "+rows.map(r=>`${esc(r.p.name)} ${chf(r.x.total)} <span class="mut">(${r.x.txt.join(", ")})</span>`).join(" · "):"Wirkt sich erst aus, wenn bei einer Person Kinder oder Hunde eingetragen sind."}</p>
+  </div>`;
 }
 function secCosts(t){
   const feeSum=t.people.reduce((a,p)=>a+personFee(t,p).total,0);
@@ -559,6 +575,7 @@ function secCosts(t){
       <button class="chip" data-pre="kurtaxe">Kurtaxe</button>
       <button class="chip" data-pre="einkauf">Einkauf</button>
     </div>
+    ${tarifBox(t)}
     <div class="tablewrap"><table><thead><tr><th>Bezeichnung</th><th>Bezahlt von</th><th>Aufteilung</th><th class="num">CHF</th></tr></thead>
     <tbody>${rows||`<tr><td colspan="4" class="empty">Noch keine Kosten erfasst.</td></tr>`}</tbody>
     ${rows||feeSum?`<tfoot>${feeSum?`<tr><td colspan="3" style="font-weight:400;border-top:0" class="mut">Zuschläge Kind/Hund (bei den Personen)</td><td class="num mut" style="font-weight:400;border-top:0">${chf(feeSum)}</td></tr>`:""}<tr><td colspan="3">Total</td><td class="num">${chf(sum+feeSum)}</td></tr></tfoot>`:""}</table></div>
@@ -596,6 +613,13 @@ let lastTransfers=[];
 function wire(t){
   const m=$("main");
   {const lg=ledger(t),bal={};for(const id in lg.L)bal[id]=lg.L[id].bal;lastTransfers=settle(t.round5!==false?roundTo5(bal):bal)}
+  m.onchange=e=>{
+    const el=e.target.closest("[data-fee]"); if(!el||!token||!loaded)return;
+    const k=el.dataset.fee, v=el.value.trim().replace(",",".").replace(/['’\s]/g,"");
+    t.fees=t.fees||{};
+    if(k==="paidBy")t.fees.paidBy=v; else t.fees[k]=v&&toRp(v)>0?v:"";
+    commit();
+  };
   m.onclick=e=>{
     const el=e.target.closest("button,tr.click"); if(!el)return;
     if(el.id==="copySum")return copySummary(t);
