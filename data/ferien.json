@@ -56,6 +56,12 @@
      "weight": 1,
      "child": false,
      "hue": 148
+    },
+    {
+     "id": "iimdsfc",
+     "name": "Tobias",
+     "weight": 1,
+     "hue": 282
     }
    ],
    "stays": [
@@ -78,6 +84,13 @@
      "personId": "100njp9",
      "roomId": "xew2025",
      "from": "2026-11-13",
+     "to": "2026-11-15"
+    },
+    {
+     "id": "naflzp0",
+     "personId": "iimdsfc",
+     "roomId": "yb9eg4m",
+     "from": "2026-11-14",
      "to": "2026-11-15"
     }
    ],
@@ -136,5 +149,5 @@
    }
   }
  ],
- "updated": "2026-10-26T16:09:15.094Z"
+ "updated": "2026-10-26T16:09:46.083Z"
 }
