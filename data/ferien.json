@@ -1,0 +1,59 @@
+{
+ "trips": [
+  {
+   "id": "qtzyv7z",
+   "name": "Alp Eisten",
+   "ort": "Ramersberg",
+   "start": "2026-11-12",
+   "end": "2026-12-15",
+   "rooms": [
+    {
+     "id": "c5vzjja",
+     "name": "Doppelzimmer EG",
+     "beds": 2
+    },
+    {
+     "id": "jt84om6",
+     "name": "Doppelzimmer OG",
+     "beds": 2
+    },
+    {
+     "id": "xew2025",
+     "name": "Matratzenlager 1 OG",
+     "beds": 4
+    },
+    {
+     "id": "yb9eg4m",
+     "name": "Matratzenlager 2 OG",
+     "beds": 4
+    },
+    {
+     "id": "jajxoqk",
+     "name": "Einzelzimmer OG",
+     "beds": 1
+    }
+   ],
+   "people": [
+    {
+     "id": "0t3ovt5",
+     "name": "Janick",
+     "weight": 1,
+     "hue": 211
+    }
+   ],
+   "stays": [
+    {
+     "id": "3gd2820",
+     "personId": "0t3ovt5",
+     "roomId": "c5vzjja",
+     "from": "2026-11-12",
+     "to": "2026-12-15"
+    }
+   ],
+   "costs": [],
+   "payments": [],
+   "round5": true
+  }
+ ],
+ "updated": "2026-10-26T15:11:20.786Z"
+}
