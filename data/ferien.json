@@ -39,6 +39,13 @@
      "name": "Janick",
      "weight": 1,
      "hue": 211
+    },
+    {
+     "id": "xe3w4h2",
+     "name": "Mangesh",
+     "weight": 1,
+     "child": false,
+     "hue": 22
     }
    ],
    "stays": [
@@ -48,6 +55,13 @@
      "roomId": "c5vzjja",
      "from": "2026-11-12",
      "to": "2026-11-15"
+    },
+    {
+     "id": "1ls13rm",
+     "personId": "xe3w4h2",
+     "roomId": "jt84om6",
+     "from": "2026-11-12",
+     "to": "2026-11-15"
     }
    ],
    "costs": [],
@@ -55,5 +69,5 @@
    "round5": true
   }
  ],
- "updated": "2026-10-26T15:11:53.101Z"
+ "updated": "2026-10-26T15:47:55.411Z"
 }
