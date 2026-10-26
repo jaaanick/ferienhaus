@@ -104,6 +104,9 @@ body:not(.ro) .cell:hover{background:color-mix(in srgb,var(--accent) 14%,transpa
 .stay small{font-weight:400;opacity:.8}
 .stay .emo{letter-spacing:-.12em;font-size:.85rem}
 .stay .plus{font-weight:400;opacity:.7;margin:0 -2px}
+.dragbar{z-index:4;margin:5px 2px;border-radius:6px;border:2px dashed var(--accent);background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent);font-size:.74rem;font-weight:600;display:flex;align-items:center;padding:0 8px;white-space:nowrap;overflow:hidden;pointer-events:none}
+body:not(.ro) .cell{cursor:cell}
+.pg{user-select:none;-webkit-user-select:none}
 .stay.clash{outline:2px solid var(--neg-ink);outline-offset:-2px}
 .foot{border-left:1px dashed var(--line);font-family:var(--f-mono);font-size:.72rem;display:flex;align-items:center;justify-content:center;color:var(--muted);border-top:1px solid var(--line)}
 .foot.full{color:var(--ink);font-weight:500}
@@ -520,7 +523,7 @@ function secPlan(t){
   return `<section class="section" id="sBelegung">
     <div class="shead"><h2>Belegung</h2><div class="tools edit"><button class="btn ghost sm" id="addRoom">Zimmer bearbeiten</button><button class="btn sm" id="addStay">＋ Aufenthalt</button></div></div>
     <div class="plan"><div class="pg" style="--n:${ds.length};grid-template-columns:var(--lw) repeat(${2*ds.length},minmax(calc(var(--cw) / 2),1fr))">${h}</div></div>
-    <p class="hint">Jede Spalte ist ein Tag. Balken beginnen am Anreisetag mittags und enden am Abreisetag mittags; die Zahl unten zeigt, wie viele Personen in der jeweiligen Nacht da sind. <span class="edit">Auf ein freies Feld tippen, um jemanden ins Zimmer einzutragen; auf einen Balken tippen, um ihn zu ändern.</span></p>
+    <p class="hint">Jede Spalte ist ein Tag. Balken beginnen am Anreisetag mittags und enden am Abreisetag mittags; die Zahl unten zeigt, wie viele Personen in der jeweiligen Nacht da sind. <span class="edit">Mit der Maus vom Anreise- bis zum Abreisetag einen Balken aufziehen (oder auf ein freies Feld tippen), um jemanden einzutragen; auf einen Balken tippen, um ihn zu ändern.</span></p>
   </section>`;
 }
 
@@ -626,8 +629,32 @@ function secSettle(t,lg){
 }
 
 /* ================= Interaktion ================= */
-let lastTransfers=[];
+let lastTransfers=[], dragDone=false;
+/* Balken mit der Maus aufziehen: Zimmer + Anreise + Abreise in einem Zug */
+let drag=null;
+const dragSpan=(t,a,b)=>{let f=a<b?a:b, to=a<b?b:a; if(f===to)to=addDays(f,1); if(f>=t.end)f=addDays(t.end,-1); if(to>t.end)to=t.end; if(to<=f)to=addDays(f,1); return [f,to]};
+function dragShow(){const t=T();if(!t||!drag)return;const [f,to]=dragSpan(t,drag.a,drag.b),col=d=>2+2*diff(t.start,d);
+  drag.pv.style.gridColumn=`${col(f)+1}/${col(to)+1}`;drag.pv.textContent=`${fd(f)} – ${fd(to)} · ${diff(f,to)} N.`}
+function wireDrag(){
+  const pg=document.querySelector(".pg"); if(!pg)return;
+  pg.addEventListener("mousedown",e=>{
+    const c=e.target.closest(".cell"); if(!c||e.button!==0||!token||!loaded)return;
+    e.preventDefault();
+    const pv=document.createElement("div");pv.className="dragbar";pv.style.gridRow=c.style.gridRow;pg.appendChild(pv);
+    drag={room:c.dataset.room,a:c.dataset.d,b:c.dataset.d,pv};dragShow();
+  });
+}
+addEventListener("mousemove",e=>{if(!drag)return;const el=document.elementFromPoint(e.clientX,e.clientY),c=el&&el.closest(".pg .cell");
+  if(c&&c.dataset.d&&c.dataset.d!==drag.b){drag.b=c.dataset.d;dragShow()}});
+addEventListener("mouseup",()=>{
+  if(!drag)return; const d=drag; drag=null; d.pv.remove();
+  if(d.a===d.b)return;               // einfacher Klick → normaler Klick-Ablauf
+  dragDone=true; setTimeout(()=>dragDone=false,400);
+  const t=T(); if(!t)return; const [f,to]=dragSpan(t,d.a,d.b);
+  stayDialog(t,null,{roomId:d.room,from:f,to});
+});
 function wire(t){
+  wireDrag();
   const m=$("main");
   {const lg=ledger(t),bal={};for(const id in lg.L)bal[id]=lg.L[id].bal;lastTransfers=settle(t.round5!==false?roundTo5(bal):bal)}
   m.onchange=e=>{
@@ -651,7 +678,7 @@ function wire(t){
     if(el.dataset.pre)return costDialog(t,null,el.dataset.pre);
     if(el.dataset.stay)return stayDialog(t,t.stays.find(s=>s.id===el.dataset.stay));
     if(el.classList.contains("rl")&&el.dataset.room)return tripDialog(t);
-    if(el.classList.contains("cell"))return stayDialog(t,null,{roomId:el.dataset.room,from:el.dataset.d>=t.end?addDays(t.end,-1):el.dataset.d});
+    if(el.classList.contains("cell")){if(dragDone){dragDone=false;return}return stayDialog(t,null,{roomId:el.dataset.room,from:el.dataset.d>=t.end?addDays(t.end,-1):el.dataset.d})}
     if(el.dataset.person)return personDialog(t,P(t,el.dataset.person));
     if(el.dataset.cost)return costDialog(t,t.costs.find(c=>c.id===el.dataset.cost));
     if(el.dataset.pay!=null){const z=lastTransfers[+el.dataset.pay];if(!z)return;
@@ -802,7 +829,7 @@ function stayDialog(t,s,pre={}){
   const isNew=!s;
   const cur=s||{personId:pre.personId||"",roomId:pre.roomId??(t.rooms[0]?.id||""),from:pre.from||t.start,to:pre.from?(()=>{let e=t.end;for(const x of t.stays){}return e})():t.end};
   if(isNew&&pre.from){ // Standard: bis Ferienende
-    cur.to=t.end;
+    cur.to=pre.to||t.end;
   }
   const opts=t.people.map(p=>`<option value="${p.id}" ${p.id===cur.personId?"selected":""}>${esc(p.name)}</option>`).join("");
   openDlg(isNew?"Aufenthalt eintragen":"Aufenthalt ändern",`
