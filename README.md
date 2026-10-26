@@ -10,7 +10,7 @@ Funktionen:
 - Mehrere Ferien mit Anreise/Abreise, Zimmern und Schlafplätzen
 - Belegungsplan (Zimmer × Nächte), Personen mit einem oder mehreren Aufenthalten, Warnung bei Überbelegung
 - Kosten pauschal, pro Nacht, pro Woche, pro Person & Nacht (z.B. Kurtaxe)  oder als Staffelpreis pro Nacht (Grundpreis für X Personen, Zuschlag pro weitere Person)
-- Zuschläge pro Ferien (Kind pro Nacht, Hund pro Nacht, Hund pauschal) werden automatisch der Person belastet, die als Kind markiert ist bzw. einen Hund dabei hat
+- Zuschläge pro Ferien (Kind pro Nacht, Hund pro Nacht, Hund pauschal) werden automatisch der Person belastet, die Kinder bzw. Hunde dabei hat (Anzahl bei der Person)
 - Aufteilung nach Nächten, gleichmässig, Anwesende am Datum (Einkauf) oder prozentual; Gewichtung pro Person (z.B. Kind ×0,5)
 - Abrechnung mit minimaler Anzahl Ausgleichszahlungen (auf 5 Rappen gerundet), bezahlte Ausgleiche erfassen, Zusammenfassung als Text kopieren
 

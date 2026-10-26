@@ -273,6 +273,9 @@ const pname=(t,id)=>{const p=P(t,id);return p?p.name:"?"};
 const pdot=(t,id)=>{const p=P(t,id);return p?`<span class="dot" style="--h:${p.hue}"></span>${esc(p.name)}`:"–"};
 const isKid=p=>!!(p&&p.child);
 const dogs=p=>Math.max(0,parseInt(p&&p.dogs)||0);
+const kidsOf=p=>Math.max(0,parseInt(p&&p.kids)||0);
+const kidsTxt=n=>`${n} Kind${n>1?"er":""}`;
+const heads=(t,set)=>[...set].reduce((a,id)=>a+1+kidsOf(P(t,id)),0);   // Köpfe inkl. mitgebrachter Kinder
 const wt=p=>typeof p.weight==="number"&&p.weight>=0?p.weight:1;
 
 const CATS={unterkunft:"Unterkunft",neben:"Nebenkosten",einkauf:"Einkauf",aktiv:"Aktivität",sonst:"Sonstiges"};
@@ -365,7 +368,8 @@ const FEE_KEYS=["kidNight","dogNight","dogFlat"];
 const hasFees=t=>FEE_KEYS.some(k=>toRp((t.fees||{})[k])>0);
 function personFee(t,p){
   const f=t.fees||{}, n=personNights(t,p.id).size, d=dogs(p), o={kid:0,dog:0,txt:[]};
-  if(isKid(p)&&toRp(f.kidNight)>0&&n){o.kid=toRp(f.kidNight)*n;o.txt.push(`Kind ${n} N. × ${chf(toRp(f.kidNight))}`)}
+  const k=(isKid(p)?1:0)+kidsOf(p);
+  if(k&&toRp(f.kidNight)>0&&n){o.kid=toRp(f.kidNight)*n*k;o.txt.push(`${kidsOf(p)?kidsTxt(k)+" × ":"Kind "}${n} N. × ${chf(toRp(f.kidNight))}`)}
   if(d&&toRp(f.dogNight)>0&&n){o.dog+=toRp(f.dogNight)*n*d;o.txt.push(`Hund ${d>1?d+" × ":""}${n} N. × ${chf(toRp(f.dogNight))}`)}
   if(d&&toRp(f.dogFlat)>0){o.dog+=toRp(f.dogFlat)*d;o.txt.push(`Hund ${d>1?d+" × ":""}pauschal ${chf(toRp(f.dogFlat))}`)}
   o.total=o.kid+o.dog; return o;
@@ -449,11 +453,11 @@ function render(){
   $("title").textContent=t.name;
   $("subtitle").textContent=[t.ort,range(t.start,t.end)].filter(Boolean).join(" · ");
   const lg=ledger(t), N=diff(t.start,t.end), beds=t.rooms.reduce((s,r)=>s+(+r.beds||0),0);
-  let peak=0; for(const n of nights(t.start,t.end))peak=Math.max(peak,presentOn(t,n).size);
+  let peak=0; for(const n of nights(t.start,t.end))peak=Math.max(peak,heads(t,presentOn(t,n)));
   $("main").innerHTML=`
   <div class="stats">
     <div class="stat"><span class="k">Aufenthalt</span><span class="v">${N}<small>Nächte</small></span></div>
-    <div class="stat ${peak>beds?"over":""}"><span class="k">Personen / Plätze</span><span class="v">${t.people.length}<small>Pers. · max. ${peak}/${beds} Plätze</small></span></div>
+    <div class="stat ${peak>beds?"over":""}"><span class="k">Personen / Plätze</span><span class="v">${t.people.length}<small>Pers.${(()=>{const k=t.people.reduce((a,p)=>a+kidsOf(p),0);return k?` + ${kidsTxt(k)}`:""})()} · max. ${peak}/${beds} Plätze</small></span></div>
     <div class="stat"><span class="k">Kosten total</span><span class="v">${chf(lg.total)}<small>CHF</small></span></div>
     <div class="stat"><span class="k">Pro Person &amp; Nacht</span><span class="v">${(()=>{const pn=Object.values(lg.L).reduce((s,x)=>s+x.nights,0);return pn?chf(Math.round(lg.total/pn)):"–"})()}<small>CHF Ø</small></span></div>
   </div>
@@ -489,14 +493,14 @@ function secPlan(t){
       const a=s.from<t.start?t.start:s.from, b=s.to>t.end?t.end:s.to; if(a>=b)continue;
       const p=P(t,s.personId); if(!p)continue;
       if(!g.none&&at[s.id]>=g.beds)clashIds.add(s.id);
-      h+=`<button type="button" class="stay ${clashIds.has(s.id)?"clash":""}" style="--h:${p.hue};grid-row:${row+at[s.id]};grid-column:${col(a)+1}/${col(b)+1}" data-stay="${s.id}" title="${esc(p.name)}: ${range(s.from,s.to)}">${esc(p.name)}${dogs(p)?`<span title="${dogs(p)} Hund${dogs(p)>1?"e":""}">🐕${dogs(p)>1?dogs(p):""}</span>`:""}${diff(a,b)>2?`<small>${diff(s.from,s.to)} N.</small>`:""}</button>`;
+      h+=`<button type="button" class="stay ${clashIds.has(s.id)?"clash":""}" style="--h:${p.hue};grid-row:${row+at[s.id]};grid-column:${col(a)+1}/${col(b)+1}" data-stay="${s.id}" title="${esc(p.name)}: ${range(s.from,s.to)}">${esc(p.name)}${kidsOf(p)?`<span title="mit ${kidsTxt(kidsOf(p))}">+${kidsOf(p)}</span>`:""}${dogs(p)?`<span title="${dogs(p)} Hund${dogs(p)>1?"e":""}">🐕${dogs(p)>1?dogs(p):""}</span>`:""}${diff(a,b)>2?`<small>${diff(s.from,s.to)} N.</small>`:""}</button>`;
     }
     row+=L;
   }
   const beds=t.rooms.reduce((s,r)=>s+(+r.beds||0),0);
   h+=`<div class="rl f" style="grid-row:${row}"><b>Belegt</b><small>von ${beds} Plätzen</small></div>`;
   h+=`<div class="foot" style="grid-row:${row};grid-column:2"></div><div class="foot" style="grid-row:${row};grid-column:${col(t.end)+1}"></div>`;
-  ns.forEach(d=>{const c=presentOn(t,d).size;h+=`<div class="foot ${c>beds?"over":c===beds&&c?"full":""}" style="grid-row:${row};grid-column:${col(d)+1}/span 2" title="Nacht ${fd(d)} – ${fd(addDays(d,1))}">${c||"·"}</div>`});
+  ns.forEach(d=>{const c=heads(t,presentOn(t,d));h+=`<div class="foot ${c>beds?"over":c===beds&&c?"full":""}" style="grid-row:${row};grid-column:${col(d)+1}/span 2" title="Nacht ${fd(d)} – ${fd(addDays(d,1))}">${c||"·"}</div>`});
   return `<section class="section" id="sBelegung">
     <div class="shead"><h2>Belegung</h2><div class="tools edit"><button class="btn ghost sm" id="addRoom">Zimmer bearbeiten</button><button class="btn sm" id="addStay">＋ Aufenthalt</button></div></div>
     <div class="plan"><div class="pg" style="--n:${ds.length};grid-template-columns:var(--lw) repeat(${2*ds.length},minmax(calc(var(--cw) / 2),1fr))">${h}</div></div>
@@ -509,7 +513,7 @@ function secPeople(t,lg){
     const st=t.stays.filter(s=>s.personId===p.id).sort((a,b)=>a.from<b.from?-1:1);
     const desc=st.length?st.map(s=>`${range(s.from,s.to)} · ${esc(R(t,s.roomId)?.name||"ohne Zimmer")}`).join("<br>"):`<span class="mut">kein Aufenthalt</span>`;
     const fe=personFee(t,p);
-    return `<tr class="click" data-person="${p.id}"><td class="nw">${pdot(t,p.id)}${isKid(p)?` <span class="pill">Kind</span>`:""}${dogs(p)?` <span class="pill">🐕 ${dogs(p)} Hund${dogs(p)>1?"e":""}</span>`:""}${wt(p)!==1?` <span class="pill">×${String(wt(p)).replace(".",",")}</span>`:""}</td><td>${desc}</td><td class="num">${lg.L[p.id].nights}</td>${hasFees(t)?`<td class="num">${fe.total?chf(fe.total)+`<span class="meta">${fe.txt.join(" · ")}</span>`:"–"}</td>`:""}</tr>`;
+    return `<tr class="click" data-person="${p.id}"><td class="nw">${pdot(t,p.id)}${isKid(p)?` <span class="pill">Kind</span>`:""}${kidsOf(p)?` <span class="pill">+ ${kidsTxt(kidsOf(p))}</span>`:""}${dogs(p)?` <span class="pill">🐕 ${dogs(p)} Hund${dogs(p)>1?"e":""}</span>`:""}${wt(p)!==1?` <span class="pill">×${String(wt(p)).replace(".",",")}</span>`:""}</td><td>${desc}</td><td class="num">${lg.L[p.id].nights}</td>${hasFees(t)?`<td class="num">${fe.total?chf(fe.total)+`<span class="meta">${fe.txt.join(" · ")}</span>`:"–"}</td>`:""}</tr>`;
   }).join("");
   return `<section class="section" id="sPersonen">
     <div class="shead"><h2>Personen</h2><div class="tools edit"><button class="btn ghost sm" id="feeBtn">Zuschläge Kind/Hund</button><button class="btn sm" id="addPerson">＋ Person</button></div></div>
@@ -701,7 +705,7 @@ function feeDialog(t){
   const upd=()=>{
     const tmp={...t,fees:{kidNight:F("kidNight").value.replace(",","."),dogNight:F("dogNight").value.replace(",","."),dogFlat:F("dogFlat").value.replace(",",".")}};
     const rows=t.people.map(p=>({p,f:personFee(tmp,p)})).filter(x=>x.f.total);
-    $("feePrev").innerHTML=rows.length?rows.map(x=>`<div class="prow" style="grid-template-columns:1fr auto"><span>${pdot(t,x.p.id)} <span class="mut">${x.f.txt.join(" · ")}</span></span><span class="sh">${chf(x.f.total)}</span></div>`).join(""):`<div class="prow" style="grid-template-columns:1fr"><span class="mut">Noch niemand als Kind markiert oder mit Hund eingetragen (bei der Person).</span></div>`;
+    $("feePrev").innerHTML=rows.length?rows.map(x=>`<div class="prow" style="grid-template-columns:1fr auto"><span>${pdot(t,x.p.id)} <span class="mut">${x.f.txt.join(" · ")}</span></span><span class="sh">${chf(x.f.total)}</span></div>`).join(""):`<div class="prow" style="grid-template-columns:1fr"><span class="mut">Noch niemand mit Kindern oder Hund eingetragen (bei der Person).</span></div>`;
   };
   form.addEventListener("input",upd); upd();
 }
@@ -717,7 +721,8 @@ function personDialog(t,p){
       <div class="seg">${[["1","Erwachsen ×1"],["0.5","Kind ×½"],["0","Gratis ×0"],["x","eigene"]].map(([v,l])=>`<label><input type="radio" name="wp" value="${v}" ${preset===v?"checked":""}>${l}</label>`).join("")}</div>
       <input class="inp" name="wx" type="number" step="0.05" min="0" max="5" value="${w}" ${preset==="x"?"":"hidden"} aria-label="Eigene Gewichtung">
     </div>
-    <label class="prow" style="border:1px solid var(--line);border-radius:10px;grid-template-columns:auto 1fr"><input type="checkbox" name="child" ${isKid(p)?"checked":""}><span>Kind <span class="mut">– Kindertarif wird automatisch verrechnet (Zuschläge)</span></span></label>
+    <label class="prow" style="border:1px solid var(--line);border-radius:10px;grid-template-columns:auto 1fr"><input type="number" name="kids" min="0" max="9" step="1" value="${kidsOf(p)}" aria-label="Anzahl Kinder"><span>Kind(er) dabei <span class="mut">– Kindertarif wird dieser Person automatisch verrechnet (Zuschläge)</span></span></label>
+    <label class="prow" style="border:1px solid var(--line);border-radius:10px;grid-template-columns:auto 1fr" ${isKid(p)?"":"hidden"}><input type="checkbox" name="child" ${isKid(p)?"checked":""}><span>Diese Person ist selbst ein Kind <span class="mut">– Kindertarif statt Erwachsenenanteil beim Staffelpreis</span></span></label>
     <label class="prow" style="border:1px solid var(--line);border-radius:10px;grid-template-columns:auto 1fr"><input type="number" name="dogs" min="0" max="9" step="1" value="${dogs(p)}" aria-label="Anzahl Hunde"><span>🐕 Hund(e) dabei <span class="mut">– Hundetarif wird automatisch verrechnet (Zuschläge)</span></span></label>
     ${isNew?`<div class="row2"><label class="fl"><span>Anreise</span><input type="date" name="from" value="${t.start}" min="${t.start}" max="${t.end}"></label><label class="fl"><span>Abreise</span><input type="date" name="to" value="${t.end}" min="${t.start}" max="${t.end}"></label></div>
       <label class="fl"><span>Zimmer</span><select name="room">${roomOpts(t,"")}</select></label>`
@@ -727,13 +732,13 @@ function personDialog(t,p){
       const name=F("name").value.trim(); if(!name)return fail("Bitte einen Namen eingeben.");
       if(t.people.some(x=>x.name.toLowerCase()===name.toLowerCase()&&x!==p))return fail("Diesen Namen gibt es schon.");
       const wp=form.querySelector("[name=wp]:checked").value, weight=wp==="x"?Math.max(0,parseFloat(F("wx").value)||0):+wp;
-      const child=F("child").checked, dg=Math.max(0,parseInt(F("dogs").value)||0);
+      const child=F("child").checked, kids=Math.max(0,parseInt(F("kids").value)||0), dg=Math.max(0,parseInt(F("dogs").value)||0);
       if(isNew){
         const f=F("from").value,to=F("to").value;
         if(f&&to&&to<=f)return fail("Die Abreise muss nach der Anreise liegen.");
-        const np={id:uid(),name,weight,child,dogs:dg,hue:hueOf(t)};t.people.push(np);
+        const np={id:uid(),name,weight,child,kids,dogs:dg,hue:hueOf(t)};t.people.push(np);
         if(f&&to)t.stays.push({id:uid(),personId:np.id,roomId:F("room").value,from:f,to});
-      }else Object.assign(p,{name,weight,child,dogs:dg});
+      }else Object.assign(p,{name,weight,child,kids,dogs:dg});
       commit();
     },
     onDelete:isNew?null:()=>{
@@ -745,7 +750,7 @@ function personDialog(t,p){
       commit();
     },delLabel:"Person entfernen"
   });
-  form.querySelectorAll("[name=wp]").forEach(r=>r.onchange=()=>{F("wx").hidden=r.value!=="x"||!r.checked;if(r.checked&&r.value!=="x")F("wx").value=r.value;if(r.checked&&r.value==="0.5")F("child").checked=true;if(r.checked&&r.value==="1")F("child").checked=false});
+  form.querySelectorAll("[name=wp]").forEach(r=>r.onchange=()=>{F("wx").hidden=r.value!=="x"||!r.checked;if(r.checked&&r.value!=="x")F("wx").value=r.value});
   form.querySelectorAll("[data-es]").forEach(b=>b.onclick=()=>{dlg.close();stayDialog(t,t.stays.find(s=>s.id===b.dataset.es))});
   if($("pAddStay"))$("pAddStay").onclick=()=>{dlg.close();stayDialog(t,null,{personId:p.id})};
 }
@@ -827,7 +832,7 @@ function costDialog(t,c,preKey){
       <p class="hint" id="modeHint"></p>
     </div>
     <div class="fl"><span>Wer bezahlt mit</span>
-      <div class="plist" id="plist">${t.people.map(p=>`<label class="prow" data-pid="${p.id}"><input type="checkbox" name="who" value="${p.id}" ${sel.has(p.id)?"checked":""}><span>${pdot(t,p.id)}${isKid(p)?' <span class="pill">Kind</span>':""}${dogs(p)?' 🐕':""}</span><input type="number" name="pct_${p.id}" step="0.1" min="0" max="100" value="${(cur.pct||{})[p.id]??""}" placeholder="%" aria-label="Prozent ${esc(p.name)}"><span class="sh" data-sh="${p.id}"></span></label>`).join("")}</div>
+      <div class="plist" id="plist">${t.people.map(p=>`<label class="prow" data-pid="${p.id}"><input type="checkbox" name="who" value="${p.id}" ${sel.has(p.id)?"checked":""}><span>${pdot(t,p.id)}${isKid(p)?' <span class="pill">Kind</span>':""}${kidsOf(p)?` <span class="pill">+${kidsOf(p)}</span>`:""}${dogs(p)?' 🐕':""}</span><input type="number" name="pct_${p.id}" step="0.1" min="0" max="100" value="${(cur.pct||{})[p.id]??""}" placeholder="%" aria-label="Prozent ${esc(p.name)}"><span class="sh" data-sh="${p.id}"></span></label>`).join("")}</div>
       <div class="chips"><button type="button" class="chip" id="wAll">Alle</button><button type="button" class="chip" id="wNone">Keine</button><button type="button" class="chip" id="pEven">% gleichmässig</button></div>
     </div>
     <div class="preview"><span>Total</span><b id="cTot">–</b></div>`,{
