@@ -96,8 +96,7 @@
      "from": "",
      "to": "",
      "incl": 2,
-     "extra": "30",
-     "kid": "5"
+     "extra": "30"
     },
     {
      "id": "eqjilbb",
@@ -112,11 +111,29 @@
      "date": "",
      "from": "",
      "to": ""
+    },
+    {
+     "id": "sr0yz8v",
+     "title": "Kurtaxe",
+     "cat": "neben",
+     "amount": "2.5",
+     "unit": "ppn",
+     "mode": "naechte",
+     "who": [],
+     "pct": {},
+     "paidBy": "0t3ovt5",
+     "date": "",
+     "from": "",
+     "to": ""
     }
    ],
    "payments": [],
-   "round5": true
+   "round5": true,
+   "fees": {
+    "kidNight": "5",
+    "paidBy": "0t3ovt5"
+   }
   }
  ],
- "updated": "2026-10-26T15:53:06.212Z"
+ "updated": "2026-10-26T16:08:23.944Z"
 }
