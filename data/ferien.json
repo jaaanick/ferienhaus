@@ -61,7 +61,10 @@
      "id": "iimdsfc",
      "name": "Tobias",
      "weight": 1,
-     "hue": 282
+     "hue": 282,
+     "child": false,
+     "kids": 1,
+     "dogs": 0
     }
    ],
    "stays": [
@@ -149,5 +152,5 @@
    }
   }
  ],
- "updated": "2026-10-26T16:09:46.083Z"
+ "updated": "2026-10-26T16:10:27.586Z"
 }
