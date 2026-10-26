@@ -38,7 +38,9 @@
      "id": "0t3ovt5",
      "name": "Janick",
      "weight": 1,
-     "hue": 211
+     "hue": 211,
+     "child": false,
+     "dogs": 1
     },
     {
      "id": "xe3w4h2",
@@ -115,5 +117,5 @@
    "round5": true
   }
  ],
- "updated": "2026-10-26T15:50:03.102Z"
+ "updated": "2026-10-26T15:52:49.846Z"
 }
