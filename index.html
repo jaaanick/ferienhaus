@@ -335,7 +335,10 @@ function ledger(t){
   for(const id in L){const x=L[id];x.bal=x.paid-x.owed+x.sent-x.recv}
   return {L,total,open,problems};
 }
-function roundTo5(bal){                   // Salden auf 5 Rappen, Summe bleibt 0
+function roundTo5(bal){                   // Salden auf 5 Rappen, Summe bleibt 0; Reste unter 10 Rp. gelten als ausgeglichen
+  bal={...bal}; let rest=0;
+  for(const i in bal)if(Math.abs(bal[i])<10){rest+=bal[i];bal[i]=0}
+  if(rest){const big=Object.keys(bal).sort((x,y)=>Math.abs(bal[y])-Math.abs(bal[x]))[0];bal[big]+=rest}
   const ids=Object.keys(bal), q={}, fr=[]; let s=0;
   for(const i of ids){const x=bal[i]/5, f=Math.floor(x);q[i]=f;s+=f;fr.push([x-f,i])}
   fr.sort((a,b)=>b[0]-a[0]);
