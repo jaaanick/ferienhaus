@@ -142,7 +142,15 @@ td .meta{display:block;font-size:.76rem;color:var(--muted)}
 .box ol{padding-left:1.3em;display:flex;flex-direction:column;gap:3px}
 .box b{color:var(--ink)}
 .box.auth{border-color:var(--accent)}
-.box.tarif{gap:8px;padding:12px 14px}
+.box.tarif{gap:8px;padding:0}
+.box.tarif>*:not(summary){margin-inline:14px}
+.box.tarif>:last-child{margin-bottom:12px}
+.box.tarif summary{list-style:none;cursor:pointer;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:11px 14px}
+.box.tarif summary::-webkit-details-marker{display:none}
+.box.tarif summary::before{content:"▸";color:var(--muted);transition:transform .15s;display:inline-block}
+.box.tarif[open] summary::before{transform:rotate(90deg)}
+.box.tarif .tsum{font-size:.8rem;color:var(--muted);font-family:var(--f-mono)}
+.box.tarif:not([open]){gap:0}
 .box.tarif input,.box.tarif select{border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:7px 9px;font-size:.92rem;font-weight:400;width:100%;min-width:0;font-family:var(--f-mono)}
 .box.tarif select{font-family:var(--f-body)}
 .box.tarif input[readonly]{border-style:dashed}
@@ -538,17 +546,21 @@ function splitDesc(t,c){
   else s+=" · alle";
   return s;
 }
+let tarifOpen=false;
+document.addEventListener("toggle",e=>{if(e.target.id==="tarifBox")tarifOpen=e.target.open},true);
 function tarifBox(t){
   const f=t.fees||{}, ro=!token;
   const inp=(k,l)=>`<label class="fl"><span>${l}</span><input data-fee="${k}" inputmode="decimal" value="${esc(f[k]??"")}" placeholder="–" ${ro?"readonly":""}></label>`;
   const rows=t.people.map(p=>({p,x:personFee(t,p)})).filter(r=>r.x.total);
   const any=hasFees(t);
-  return `<div class="box tarif">
-    <div class="shead"><h3 style="margin:0">Tarife Kind / Hund</h3><span class="pill">nur Info – berechnet bei den Personen</span></div>
+  const sum=[toRp(f.kidNight)?`Kind ${chf(toRp(f.kidNight))}/N.`:"",toRp(f.dogNight)?`Hund ${chf(toRp(f.dogNight))}/N.`:"",toRp(f.dogFlat)?`Hund ${chf(toRp(f.dogFlat))} pauschal`:""].filter(Boolean).join(" · ");
+  return `<details class="box tarif" id="tarifBox" ${tarifOpen?"open":""}>
+    <summary><h3 style="margin:0;display:inline">Tarife Kind / Hund</h3><span class="tsum">${sum||"keine eingetragen"}</span></summary>
+    <span class="pill" style="align-self:flex-start">nur Info – berechnet bei den Personen</span>
     <div class="row">${inp("kidNight","Kind pro Nacht")}${inp("dogNight","🐕 pro Nacht pro Hund")}${inp("dogFlat","🐕 pauschal pro Hund")}
       <label class="fl"><span>Bezahlt von</span><select data-fee="paidBy" ${ro?"disabled":""}><option value="">${rentCost(t)?`– mit der Miete${rentCost(t).paidBy&&P(t,rentCost(t).paidBy)?" ("+esc(pname(t,rentCost(t).paidBy))+")":""} –`:"– noch offen –"}</option>${t.people.map(p=>`<option value="${p.id}" ${p.id===f.paidBy?"selected":""}>${esc(p.name)}</option>`).join("")}</select></label></div>
     <p class="hint">${!any?"Noch keine Tarife eingetragen.":rows.length?"Berechnet: "+rows.map(r=>`${esc(r.p.name)} ${chf(r.x.total)} <span class="mut">(${r.x.txt.join(", ")})</span>`).join(" · "):"Wirkt sich erst aus, wenn bei einer Person Kinder oder Hunde eingetragen sind."}</p>
-  </div>`;
+  </details>`;
 }
 function secCosts(t){
   const feeSum=t.people.reduce((a,p)=>a+personFee(t,p).total,0);
