@@ -267,10 +267,11 @@ const P=(t,id)=>t.people.find(p=>p.id===id);
 const R=(t,id)=>t.rooms.find(r=>r.id===id);
 const pname=(t,id)=>{const p=P(t,id);return p?p.name:"?"};
 const pdot=(t,id)=>{const p=P(t,id);return p?`<span class="dot" style="--h:${p.hue}"></span>${esc(p.name)}`:"–"};
+const isKid=p=>!!(p&&p.child);
 const wt=p=>typeof p.weight==="number"&&p.weight>=0?p.weight:1;
 
 const CATS={unterkunft:"Unterkunft",neben:"Nebenkosten",einkauf:"Einkauf",aktiv:"Aktivität",sonst:"Sonstiges"};
-const UNITS={total:"Pauschal",nacht:"pro Nacht",woche:"pro Woche",ppn:"pro Person & Nacht"};
+const UNITS={total:"Pauschal",nacht:"pro Nacht",woche:"pro Woche",ppn:"pro Person & Nacht",staffel:"Staffelpreis pro Nacht"};
 const MODES={naechte:"nach Nächten",gleich:"gleichmässig",anwesend:"Anwesende am Datum",prozent:"prozentual"};
 
 /* ================= Rechnen (alles in Rappen) ================= */
@@ -290,7 +291,27 @@ function costTotal(t,c){
   if(c.unit==="nacht")return a*N;
   if(c.unit==="woche")return Math.round(a*N/7);
   if(c.unit==="ppn")return a*participants(t,c).reduce((s,id)=>s+personNights(t,id,f,to).size,0);
+  if(c.unit==="staffel")return staffel(t,c).total;
   return a;
+}
+/* Staffelpreis: Grundpreis für «incl» Personen, Zuschlag pro weitere Person, Kindertarif.
+   Pro Nacht: Kinder zahlen ihren Tarif, Erwachsene teilen Grundpreis + Zuschläge. */
+function staffel(t,c){
+  const base=toRp(c.amount), extra=toRp(c.extra), kid=toRp(c.kid), incl=Math.max(0,parseInt(c.incl)||0);
+  const ids=participants(t,c), [f,to]=costRange(t,c), parts={}; let total=0;
+  for(const id of ids)parts[id]=0;
+  for(const n of nights(f,to)){
+    const pres=presentOn(t,n), here=ids.filter(id=>pres.has(id));
+    const kids=here.filter(id=>isKid(P(t,id))), adults=here.filter(id=>!isKid(P(t,id)));
+    const rest=base+extra*Math.max(0,adults.length-incl);
+    total+=rest+kid*kids.length;
+    for(const id of kids)parts[id]+=kid;
+    const payers=adults.length?adults:kids.length?kids:ids, w={};
+    for(const id of payers)w[id]=wt(P(t,id))||0;
+    const d=distribute(rest,w)||distribute(rest,Object.fromEntries(payers.map(id=>[id,1])));
+    if(d)for(const id in d)parts[id]+=d[id];
+  }
+  return {total,parts};
 }
 function weightsFor(t,c){
   const ids=participants(t,c), [f,to]=costRange(t,c), w={};
@@ -317,6 +338,7 @@ function shares(t,c){
   const total=costTotal(t,c), w=weightsFor(t,c);
   if(c.mode==="prozent"){const s=Object.values(w).reduce((a,b)=>a+b,0);if(Math.abs(s-100)>0.01)return {total,parts:null,err:`Prozente ergeben ${+s.toFixed(2)} % statt 100 %`}}
   if(total===0)return {total,parts:{},err:null};
+  if(c.unit==="staffel"&&c.mode==="naechte")return {total,parts:staffel(t,c).parts,err:null};
   const parts=distribute(total,w);
   if(!parts)return {total,parts:null,err:c.mode==="anwesend"?"Am Datum ist niemand anwesend":c.mode==="naechte"?"Beteiligte haben keine Nächte im Zeitraum":"Niemand beteiligt"};
   return {total,parts,err:null};
@@ -454,7 +476,7 @@ function secPeople(t,lg){
   const rows=t.people.map(p=>{
     const st=t.stays.filter(s=>s.personId===p.id).sort((a,b)=>a.from<b.from?-1:1);
     const desc=st.length?st.map(s=>`${range(s.from,s.to)} · ${esc(R(t,s.roomId)?.name||"ohne Zimmer")}`).join("<br>"):`<span class="mut">kein Aufenthalt</span>`;
-    return `<tr class="click" data-person="${p.id}"><td class="nw">${pdot(t,p.id)}${wt(p)!==1?` <span class="pill">×${String(wt(p)).replace(".",",")}</span>`:""}</td><td>${desc}</td><td class="num">${lg.L[p.id].nights}</td></tr>`;
+    return `<tr class="click" data-person="${p.id}"><td class="nw">${pdot(t,p.id)}${isKid(p)?` <span class="pill">Kind</span>`:""}${wt(p)!==1?` <span class="pill">×${String(wt(p)).replace(".",",")}</span>`:""}</td><td>${desc}</td><td class="num">${lg.L[p.id].nights}</td></tr>`;
   }).join("");
   return `<section class="section" id="sPersonen">
     <div class="shead"><h2>Personen</h2><div class="tools edit"><button class="btn sm" id="addPerson">＋ Person</button></div></div>
@@ -477,7 +499,8 @@ function secCosts(t){
   let sum=0;
   const rows=cs.map(c=>{
     const s=shares(t,c); sum+=s.total; const [f,to]=costRange(t,c);
-    const unit=c.unit&&c.unit!=="total"?`${chf(toRp(c.amount))} ${UNITS[c.unit]}${c.unit!=="ppn"||true?` · ${c.unit==="ppn"?"":""}${diff(f,to)} N.`:""}`:"";
+    const unit=c.unit==="staffel"?`${chf(toRp(c.amount))}/Nacht für ${parseInt(c.incl)||0} P. · +${chf(toRp(c.extra))} weitere P. · Kind ${chf(toRp(c.kid))} · ${diff(f,to)} N.`
+      :c.unit&&c.unit!=="total"?`${chf(toRp(c.amount))} ${UNITS[c.unit]} · ${diff(f,to)} N.`:"";
     return `<tr class="click" data-cost="${c.id}">
       <td><b>${esc(c.title)}</b><span class="meta">${CATS[c.cat]||""}${c.date?` · ${fd(c.date)}`:""}${unit?` · ${unit}`:""}</span></td>
       <td class="nw">${c.paidBy&&P(t,c.paidBy)?pdot(t,c.paidBy):`<span class="pill warn">noch offen</span>`}</td>
@@ -490,6 +513,7 @@ function secCosts(t){
       <button class="chip" data-pre="miete_n">Miete pro Nacht</button>
       <button class="chip" data-pre="miete_w">Miete pro Woche</button>
       <button class="chip" data-pre="miete_t">Miete pauschal</button>
+      <button class="chip" data-pre="miete_s">Miete Staffelpreis</button>
       <button class="chip" data-pre="reinigung">Schlussreinigung</button>
       <button class="chip" data-pre="kurtaxe">Kurtaxe</button>
       <button class="chip" data-pre="einkauf">Einkauf</button>
@@ -632,6 +656,7 @@ function personDialog(t,p){
       <div class="seg">${[["1","Erwachsen ×1"],["0.5","Kind ×½"],["0","Gratis ×0"],["x","eigene"]].map(([v,l])=>`<label><input type="radio" name="wp" value="${v}" ${preset===v?"checked":""}>${l}</label>`).join("")}</div>
       <input class="inp" name="wx" type="number" step="0.05" min="0" max="5" value="${w}" ${preset==="x"?"":"hidden"} aria-label="Eigene Gewichtung">
     </div>
+    <label class="prow" style="border:1px solid var(--line);border-radius:10px;grid-template-columns:auto 1fr"><input type="checkbox" name="child" ${isKid(p)?"checked":""}><span>Kind <span class="mut">– für Kindertarif beim Staffelpreis (z.B. bis 16 Jahre)</span></span></label>
     ${isNew?`<div class="row2"><label class="fl"><span>Anreise</span><input type="date" name="from" value="${t.start}" min="${t.start}" max="${t.end}"></label><label class="fl"><span>Abreise</span><input type="date" name="to" value="${t.end}" min="${t.start}" max="${t.end}"></label></div>
       <label class="fl"><span>Zimmer</span><select name="room">${roomOpts(t,"")}</select></label>`
     :`<div class="fl"><span>Aufenthalte</span><div class="plist">${st.map(s=>`<div class="prow"><span></span><span>${range(s.from,s.to)} · ${esc(R(t,s.roomId)?.name||"ohne Zimmer")}</span><span class="sh">${diff(s.from,s.to)} N.</span><button type="button" class="btn ghost sm" data-es="${s.id}">Ändern</button></div>`).join("")||`<div class="prow"><span></span><span class="mut">kein Aufenthalt</span></div>`}</div>
@@ -640,12 +665,13 @@ function personDialog(t,p){
       const name=F("name").value.trim(); if(!name)return fail("Bitte einen Namen eingeben.");
       if(t.people.some(x=>x.name.toLowerCase()===name.toLowerCase()&&x!==p))return fail("Diesen Namen gibt es schon.");
       const wp=form.querySelector("[name=wp]:checked").value, weight=wp==="x"?Math.max(0,parseFloat(F("wx").value)||0):+wp;
+      const child=F("child").checked;
       if(isNew){
         const f=F("from").value,to=F("to").value;
         if(f&&to&&to<=f)return fail("Die Abreise muss nach der Anreise liegen.");
-        const np={id:uid(),name,weight,hue:hueOf(t)};t.people.push(np);
+        const np={id:uid(),name,weight,child,hue:hueOf(t)};t.people.push(np);
         if(f&&to)t.stays.push({id:uid(),personId:np.id,roomId:F("room").value,from:f,to});
-      }else Object.assign(p,{name,weight});
+      }else Object.assign(p,{name,weight,child});
       commit();
     },
     onDelete:isNew?null:()=>{
@@ -657,7 +683,7 @@ function personDialog(t,p){
       commit();
     },delLabel:"Person entfernen"
   });
-  form.querySelectorAll("[name=wp]").forEach(r=>r.onchange=()=>{F("wx").hidden=r.value!=="x"||!r.checked;if(r.checked&&r.value!=="x")F("wx").value=r.value});
+  form.querySelectorAll("[name=wp]").forEach(r=>r.onchange=()=>{F("wx").hidden=r.value!=="x"||!r.checked;if(r.checked&&r.value!=="x")F("wx").value=r.value;if(r.checked&&r.value==="0.5")F("child").checked=true;if(r.checked&&r.value==="1")F("child").checked=false});
   form.querySelectorAll("[data-es]").forEach(b=>b.onclick=()=>{dlg.close();stayDialog(t,t.stays.find(s=>s.id===b.dataset.es))});
   if($("pAddStay"))$("pAddStay").onclick=()=>{dlg.close();stayDialog(t,null,{personId:p.id})};
 }
@@ -710,6 +736,7 @@ const PRESETS={
   miete_n:{title:"Miete",cat:"unterkunft",unit:"nacht",mode:"naechte"},
   miete_w:{title:"Miete",cat:"unterkunft",unit:"woche",mode:"naechte"},
   miete_t:{title:"Miete",cat:"unterkunft",unit:"total",mode:"naechte"},
+  miete_s:{title:"Miete",cat:"unterkunft",unit:"staffel",mode:"naechte",incl:2},
   reinigung:{title:"Schlussreinigung",cat:"neben",unit:"total",mode:"gleich"},
   kurtaxe:{title:"Kurtaxe",cat:"neben",unit:"ppn",mode:"naechte"},
   einkauf:{title:"Einkauf",cat:"einkauf",unit:"total",mode:"anwesend",date:"today"}
@@ -718,13 +745,17 @@ function costDialog(t,c,preKey){
   if(!t.people.length){alert("Zuerst Personen eintragen.");return}
   const isNew=!c, pre=PRESETS[preKey]||{};
   let date=pre.date==="today"?(isoToday()>=t.start&&isoToday()<t.end?isoToday():t.start):"";
-  const cur=c?JSON.parse(JSON.stringify(c)):{title:pre.title||"",cat:pre.cat||"sonst",amount:"",unit:pre.unit||"total",mode:pre.mode||"naechte",who:[],pct:{},paidBy:"",date,from:"",to:""};
+  const cur=c?JSON.parse(JSON.stringify(c)):{title:pre.title||"",cat:pre.cat||"sonst",amount:"",unit:pre.unit||"total",mode:pre.mode||"naechte",who:[],pct:{},paidBy:"",date,from:"",to:"",incl:pre.incl??2,extra:"",kid:""};
   const sel=new Set(participants(t,cur));
   openDlg(isNew?"Kosten erfassen":"Kosten ändern",`
     <div class="row2"><label class="fl"><span>Bezeichnung</span><input name="title" value="${esc(cur.title)}" placeholder="z.B. Miete, Coop, Skipass"></label>
     <label class="fl"><span>Kategorie</span><select name="cat">${Object.entries(CATS).map(([k,v])=>`<option value="${k}" ${k===cur.cat?"selected":""}>${v}</option>`).join("")}</select></label></div>
-    <div class="row2"><label class="fl"><span>Betrag CHF</span><input name="amount" inputmode="decimal" value="${cur.amount===""?"":String(cur.amount)}" placeholder="0.00"></label>
+    <div class="row2"><label class="fl"><span id="amtLbl">Betrag CHF</span><input name="amount" inputmode="decimal" value="${cur.amount===""?"":String(cur.amount)}" placeholder="0.00"></label>
     <label class="fl"><span>Einheit</span><select name="unit">${Object.entries(UNITS).map(([k,v])=>`<option value="${k}" ${k===cur.unit?"selected":""}>${v}</option>`).join("")}</select></label></div>
+    <div class="row" id="stf"><label class="fl"><span>Inkl. Personen</span><input name="incl" type="number" min="0" max="50" value="${cur.incl??2}"></label>
+      <label class="fl"><span>+ pro weitere Pers.</span><input name="extra" inputmode="decimal" value="${cur.extra??""}" placeholder="0.00"></label>
+      <label class="fl"><span>Kind pro Nacht</span><input name="kid" inputmode="decimal" value="${cur.kid??""}" placeholder="0.00"></label></div>
+    <p class="hint" id="stfHint"></p>
     <div class="row2" id="rng"><label class="fl"><span>Von (Nacht)</span><input type="date" name="from" value="${cur.from||t.start}" min="${t.start}" max="${t.end}"></label><label class="fl"><span>Bis (Abreise)</span><input type="date" name="to" value="${cur.to||t.end}" min="${t.start}" max="${t.end}"></label></div>
     <div class="row2"><label class="fl"><span>Bezahlt von</span><select name="paidBy"><option value="">– noch offen –</option>${t.people.map(p=>`<option value="${p.id}" ${p.id===cur.paidBy?"selected":""}>${esc(p.name)}</option>`).join("")}</select></label>
     <label class="fl"><span>Datum</span><input type="date" name="date" value="${cur.date||""}"></label></div>
@@ -733,7 +764,7 @@ function costDialog(t,c,preKey){
       <p class="hint" id="modeHint"></p>
     </div>
     <div class="fl"><span>Wer bezahlt mit</span>
-      <div class="plist" id="plist">${t.people.map(p=>`<label class="prow" data-pid="${p.id}"><input type="checkbox" name="who" value="${p.id}" ${sel.has(p.id)?"checked":""}><span>${pdot(t,p.id)}</span><input type="number" name="pct_${p.id}" step="0.1" min="0" max="100" value="${(cur.pct||{})[p.id]??""}" placeholder="%" aria-label="Prozent ${esc(p.name)}"><span class="sh" data-sh="${p.id}"></span></label>`).join("")}</div>
+      <div class="plist" id="plist">${t.people.map(p=>`<label class="prow" data-pid="${p.id}"><input type="checkbox" name="who" value="${p.id}" ${sel.has(p.id)?"checked":""}><span>${pdot(t,p.id)}${isKid(p)?' <span class="pill">Kind</span>':""}</span><input type="number" name="pct_${p.id}" step="0.1" min="0" max="100" value="${(cur.pct||{})[p.id]??""}" placeholder="%" aria-label="Prozent ${esc(p.name)}"><span class="sh" data-sh="${p.id}"></span></label>`).join("")}</div>
       <div class="chips"><button type="button" class="chip" id="wAll">Alle</button><button type="button" class="chip" id="wNone">Keine</button><button type="button" class="chip" id="pEven">% gleichmässig</button></div>
     </div>
     <div class="preview"><span>Total</span><b id="cTot">–</b></div>`,{
@@ -755,7 +786,8 @@ function costDialog(t,c,preKey){
     const ranged=unit!=="total";
     return {title:F("title").value.trim(),cat:F("cat").value,amount:F("amount").value.trim().replace(",","."),unit,mode,
       who:who.length===t.people.length?[]:who,pct:mode==="prozent"?pct:{},paidBy:F("paidBy").value,date:F("date").value,
-      from:ranged&&F("from").value!==t.start?F("from").value:"",to:ranged&&F("to").value!==t.end?F("to").value:""};
+      from:ranged&&F("from").value!==t.start?F("from").value:"",to:ranged&&F("to").value!==t.end?F("to").value:"",
+      ...(unit==="staffel"?{incl:Math.max(0,parseInt(F("incl").value)||0),extra:F("extra").value.trim().replace(",","."),kid:F("kid").value.trim().replace(",",".")}:{})};
   }
   const HINT={naechte:"Anteil nach Anzahl Nächten im Zeitraum (× Gewichtung). Wer länger bleibt, zahlt mehr.",
     gleich:"Jede ausgewählte Person zahlt gleich viel (× Gewichtung), egal wie lange sie bleibt.",
@@ -764,7 +796,10 @@ function costDialog(t,c,preKey){
   const upd=()=>{
     const x=read(), ranged=x.unit!=="total";
     $("rng").hidden=!ranged;
-    $("modeHint").textContent=HINT[x.mode];
+    const st=x.unit==="staffel"; $("stf").hidden=!st; $("stfHint").hidden=!st;
+    $("amtLbl").textContent=st?"Grundpreis / Nacht CHF":"Betrag CHF";
+    if(st){const kids=t.people.filter(isKid).map(p=>p.name);$("stfHint").textContent=`Pro Nacht wird nach den Anwesenden gerechnet. Kinder (${kids.length?kids.join(", "):"noch keine – in der Person «Kind» anhaken"}) zählen nicht zur Grundbelegung.`}
+    $("modeHint").textContent=st&&x.mode==="naechte"?"Pro Nacht: Kinder zahlen ihren Kindertarif, die anwesenden Erwachsenen teilen Grundpreis und Zuschläge (× Gewichtung).":HINT[x.mode];
     form.querySelectorAll("[name^=pct_]").forEach(i=>i.hidden=x.mode!=="prozent");
     const s=shares(t,{...x,who:x.who.length?x.who:t.people.length===form.querySelectorAll("[name=who]:checked").length?[]:["-"]});
     $("cTot").textContent="CHF "+chf(s.total);
