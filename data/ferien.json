@@ -131,9 +131,10 @@
    "round5": true,
    "fees": {
     "kidNight": "5",
-    "paidBy": "0t3ovt5"
+    "paidBy": "0t3ovt5",
+    "dogFlat": "25"
    }
   }
  ],
- "updated": "2026-10-26T16:08:23.944Z"
+ "updated": "2026-10-26T16:09:15.094Z"
 }
