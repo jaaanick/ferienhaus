@@ -80,12 +80,15 @@ body.ro .edit{display:none!important}
 
 /* Belegungsplan */
 .plan{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface);-webkit-overflow-scrolling:touch}
-.pg{--cw:46px;--lw:132px;--rh:40px;display:grid;grid-template-columns:var(--lw) repeat(var(--n),minmax(var(--cw),1fr));grid-auto-rows:var(--rh);min-width:calc(var(--lw) + var(--n) * var(--cw));position:relative}
+.pg{--cw:46px;--lw:132px;--rh:40px;display:grid;grid-template-rows:56px;grid-auto-rows:var(--rh);min-width:calc(var(--lw) + var(--n) * var(--cw));position:relative}
 @media (max-width:620px){.pg{--cw:40px;--lw:98px;--rh:36px}}
 .pg>*{min-width:0}
 .ph{grid-row:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.66rem;line-height:1.15;color:var(--muted);border-bottom:1px solid var(--line);border-left:1px solid var(--line);text-transform:uppercase;letter-spacing:.04em}
 .ph b{font-family:var(--f-mono);font-size:.78rem;color:var(--ink);font-weight:500;letter-spacing:0}
 .ph.mstart{border-left-color:var(--muted)}
+.ph.arr b,.ph.dep b{color:var(--accent)}
+.ph.arr::after,.ph.dep::after{font-size:.58rem;color:var(--accent);font-weight:600;letter-spacing:.03em}
+.ph.arr::after{content:"Anreise"} .ph.dep::after{content:"Abreise"}
 .corner{grid-row:1;grid-column:1;position:sticky;left:0;z-index:3;background:var(--surface);border-bottom:1px solid var(--line);border-right:1px solid var(--line);font-size:.68rem;color:var(--muted);display:flex;align-items:flex-end;padding:4px 8px;text-transform:uppercase;letter-spacing:.05em}
 .rl{grid-column:1;position:sticky;left:0;z-index:3;background:var(--surface);border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:2px 8px;display:flex;flex-direction:column;justify-content:center;gap:0;line-height:1.2;overflow:hidden;text-align:left;border-top:0;border-left:0;border-radius:0}
 .rl b{font-weight:600;font-size:.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -99,7 +102,7 @@ body:not(.ro) .cell:hover{background:color-mix(in srgb,var(--accent) 14%,transpa
 .stay{z-index:2;margin:5px 2px;border-radius:6px;border:1px solid hsl(var(--h) var(--pl-s) var(--pl-l));background:hsl(var(--h) var(--pb-s) var(--pb-l));color:hsl(var(--h) var(--pi-s) var(--pi-l));font-size:.78rem;font-weight:600;text-align:left;padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
 .stay small{font-weight:400;opacity:.8}
 .stay.clash{outline:2px solid var(--neg-ink);outline-offset:-2px}
-.foot{border-left:1px solid var(--line);font-family:var(--f-mono);font-size:.72rem;display:flex;align-items:center;justify-content:center;color:var(--muted);border-top:1px solid var(--line)}
+.foot{border-left:1px dashed var(--line);font-family:var(--f-mono);font-size:.72rem;display:flex;align-items:center;justify-content:center;color:var(--muted);border-top:1px solid var(--line)}
 .foot.full{color:var(--ink);font-weight:500}
 .foot.over{background:var(--neg-bg);color:var(--neg-ink);font-weight:500}
 .rl.f{border-top:1px solid var(--line);border-bottom:0}
@@ -437,8 +440,9 @@ function render(){
 function secPlan(t){
   const ns=nights(t.start,t.end), n=ns.length;
   if(!n)return `<section class="section" id="sBelegung"><div class="shead"><h2>Belegung</h2></div><p class="hint">Anreise und Abreise in den Ferien-Einstellungen prüfen.</p></section>`;
+  const ds=nights(t.start,addDays(t.end,1)), col=d=>2+2*diff(t.start,d); // pro Tag zwei Halbspalten (Vormittag | Nachmittag)
   let h=`<div class="corner">Zimmer</div>`;
-  ns.forEach((d,i)=>{const day=+d.slice(8);h+=`<div class="ph ${day===1&&i?"mstart":""}" style="grid-column:${i+2}">${DOW[wdOf(d)]}<b>${d.slice(8)}</b>${day===1||i===0?MON[+d.slice(5,7)-1]:"&nbsp;"}</div>`});
+  ds.forEach((d,i)=>{const day=+d.slice(8);h+=`<div class="ph ${day===1&&i?"mstart":""} ${i===0?"arr":i===ds.length-1?"dep":""}" style="grid-column:${col(d)}/span 2">${DOW[wdOf(d)]}<b>${d.slice(8)}</b>${day===1||i===0?MON[+d.slice(5,7)-1]:"&nbsp;"}</div>`});
   let row=2, clashIds=new Set();
   const groups=[...t.rooms.map(r=>({id:r.id,name:r.name,beds:+r.beds||0})),...(t.stays.some(s=>!s.roomId||!R(t,s.roomId))?[{id:"",name:"Ohne Zimmer",beds:0,none:true}]:[])];
   for(const g of groups){
@@ -452,23 +456,24 @@ function secPlan(t){
     h+=`<button type="button" class="rl ${over?"warn":""}" style="grid-row:${row}/span ${L}" data-room="${g.id}" ${g.none?"disabled":""}><b>${esc(g.name)}</b><small>${g.none?"Zimmer zuteilen":over?`überbelegt (${count}/${g.beds})`:`${g.beds} ${g.beds===1?"Platz":"Plätze"}`}</small></button>`;
     for(let l=0;l<L;l++){
       const ov=!g.none&&l>=g.beds;
-      ns.forEach((d,i)=>{const w=wdOf(d);h+=`<button type="button" class="cell ${w>=5?"we":""} ${l===L-1?"lastlane":""} ${ov?"over":""}" style="grid-row:${row+l};grid-column:${i+2}" data-room="${g.id}" data-d="${d}" tabindex="-1" aria-label="${esc(g.name)}, ${fd(d)}"></button>`});
+      ds.forEach((d,i)=>{const w=wdOf(d);h+=`<button type="button" class="cell ${w>=5?"we":""} ${l===L-1?"lastlane":""} ${ov?"over":""}" style="grid-row:${row+l};grid-column:${col(d)}/span 2" data-room="${g.id}" data-d="${d}" tabindex="-1" aria-label="${esc(g.name)}, ${fd(d)}"></button>`});
     }
     for(const s of st){
       const a=s.from<t.start?t.start:s.from, b=s.to>t.end?t.end:s.to; if(a>=b)continue;
       const p=P(t,s.personId); if(!p)continue;
       if(!g.none&&at[s.id]>=g.beds)clashIds.add(s.id);
-      h+=`<button type="button" class="stay ${clashIds.has(s.id)?"clash":""}" style="--h:${p.hue};grid-row:${row+at[s.id]};grid-column:${diff(t.start,a)+2}/${diff(t.start,b)+2}" data-stay="${s.id}" title="${esc(p.name)}: ${range(s.from,s.to)}">${esc(p.name)}${diff(a,b)>2?`<small>${diff(s.from,s.to)} N.</small>`:""}</button>`;
+      h+=`<button type="button" class="stay ${clashIds.has(s.id)?"clash":""}" style="--h:${p.hue};grid-row:${row+at[s.id]};grid-column:${col(a)+1}/${col(b)+1}" data-stay="${s.id}" title="${esc(p.name)}: ${range(s.from,s.to)}">${esc(p.name)}${diff(a,b)>2?`<small>${diff(s.from,s.to)} N.</small>`:""}</button>`;
     }
     row+=L;
   }
   const beds=t.rooms.reduce((s,r)=>s+(+r.beds||0),0);
   h+=`<div class="rl f" style="grid-row:${row}"><b>Belegt</b><small>von ${beds} Plätzen</small></div>`;
-  ns.forEach((d,i)=>{const c=presentOn(t,d).size;h+=`<div class="foot ${c>beds?"over":c===beds&&c?"full":""}" style="grid-row:${row};grid-column:${i+2}">${c||"·"}</div>`});
+  h+=`<div class="foot" style="grid-row:${row};grid-column:2"></div><div class="foot" style="grid-row:${row};grid-column:${col(t.end)+1}"></div>`;
+  ns.forEach(d=>{const c=presentOn(t,d).size;h+=`<div class="foot ${c>beds?"over":c===beds&&c?"full":""}" style="grid-row:${row};grid-column:${col(d)+1}/span 2" title="Nacht ${fd(d)} – ${fd(addDays(d,1))}">${c||"·"}</div>`});
   return `<section class="section" id="sBelegung">
     <div class="shead"><h2>Belegung</h2><div class="tools edit"><button class="btn ghost sm" id="addRoom">Zimmer bearbeiten</button><button class="btn sm" id="addStay">＋ Aufenthalt</button></div></div>
-    <div class="plan"><div class="pg" style="--n:${ns.length}">${h}</div></div>
-    <p class="hint">Jede Spalte ist eine Nacht (Anreisetag bis Tag vor Abreise). <span class="edit">Auf ein freies Feld tippen, um jemanden ins Zimmer einzutragen; auf einen Balken tippen, um ihn zu ändern.</span></p>
+    <div class="plan"><div class="pg" style="--n:${ds.length};grid-template-columns:var(--lw) repeat(${2*ds.length},minmax(calc(var(--cw) / 2),1fr))">${h}</div></div>
+    <p class="hint">Jede Spalte ist ein Tag. Balken beginnen am Anreisetag mittags und enden am Abreisetag mittags; die Zahl unten zeigt, wie viele Personen in der jeweiligen Nacht da sind. <span class="edit">Auf ein freies Feld tippen, um jemanden ins Zimmer einzutragen; auf einen Balken tippen, um ihn zu ändern.</span></p>
   </section>`;
 }
 
@@ -568,7 +573,7 @@ function wire(t){
     if(el.dataset.pre)return costDialog(t,null,el.dataset.pre);
     if(el.dataset.stay)return stayDialog(t,t.stays.find(s=>s.id===el.dataset.stay));
     if(el.classList.contains("rl")&&el.dataset.room)return tripDialog(t);
-    if(el.classList.contains("cell"))return stayDialog(t,null,{roomId:el.dataset.room,from:el.dataset.d});
+    if(el.classList.contains("cell"))return stayDialog(t,null,{roomId:el.dataset.room,from:el.dataset.d>=t.end?addDays(t.end,-1):el.dataset.d});
     if(el.dataset.person)return personDialog(t,P(t,el.dataset.person));
     if(el.dataset.cost)return costDialog(t,t.costs.find(c=>c.id===el.dataset.cost));
     if(el.dataset.pay!=null){const z=lastTransfers[+el.dataset.pay];if(!z)return;
