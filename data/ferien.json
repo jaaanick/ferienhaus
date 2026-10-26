@@ -95,11 +95,25 @@
      "incl": 2,
      "extra": "30",
      "kid": "5"
+    },
+    {
+     "id": "eqjilbb",
+     "title": "Endreinigung",
+     "cat": "neben",
+     "amount": "50",
+     "unit": "total",
+     "mode": "naechte",
+     "who": [],
+     "pct": {},
+     "paidBy": "0t3ovt5",
+     "date": "",
+     "from": "",
+     "to": ""
     }
    ],
    "payments": [],
    "round5": true
   }
  ],
- "updated": "2026-10-26T15:49:16.334Z"
+ "updated": "2026-10-26T15:49:56.609Z"
 }
