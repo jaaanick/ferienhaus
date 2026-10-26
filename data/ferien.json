@@ -55,7 +55,9 @@
      "name": "Dominic",
      "weight": 1,
      "child": false,
-     "hue": 148
+     "hue": 148,
+     "kids": 2,
+     "dogs": 1
     },
     {
      "id": "iimdsfc",
@@ -145,5 +147,5 @@
    }
   }
  ],
- "updated": "2026-10-26T16:17:53.861Z"
+ "updated": "2026-10-26T16:19:05.092Z"
 }
