@@ -3,7 +3,8 @@
 Ferienhaus-Planer: Zimmerbelegung und Kostenaufteilung für gemeinsame Ferien.
 
 - App: https://jaaanick.github.io/ferienhaus/ (GitHub Pages, `index.html`)
-- Daten: `data/ferien.json` (wird von der App über die GitHub-API geschrieben)
+- Jede Ferien hat einen eigenen geheimen Link: `https://jaaanick.github.io/ferienhaus/<Code>`
+- Daten: `data/t/<id>.json`, pro Ferien eine Datei, verschlüsselt (AES-256-GCM). Dateiname und Schlüssel werden aus dem Code abgeleitet; ohne Link ist nichts lesbar oder zuzuordnen. `404.html` leitet `/ferienhaus/<Code>` an die App weiter.
 
 Funktionen:
 

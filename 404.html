@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<title>Ferienhaus-Planer</title>
+<script>
+/* GitHub Pages kennt /ferienhaus/<Code> nicht als Datei: Code an die App weiterreichen */
+(function(){
+  var base="/ferienhaus/", p=location.pathname;
+  var code=p.indexOf(base)===0?p.slice(base.length).split("/")[0]:"";
+  location.replace(base+(code?"?c="+encodeURIComponent(decodeURIComponent(code)):"")+location.hash);
+})();
+</script>
+</head>
+<body style="font-family:system-ui,sans-serif;background:#f3f4f5;color:#646d76;padding:24px">Wird geöffnet …</body>
+</html>

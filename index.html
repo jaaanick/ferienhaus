@@ -182,6 +182,11 @@ textarea.inp{font:inherit;font-size:.9rem;resize:vertical;border:1px solid var(-
 .toast.err{color:var(--neg-ink)}
 .hero{border:1px dashed var(--muted);border-radius:12px;padding:28px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;color:var(--muted)}
 .hero b{color:var(--ink);font-size:1.1rem}
+.tlist{display:flex;flex-direction:column;gap:6px;width:min(420px,100%)}
+.tcard{display:flex;justify-content:space-between;gap:12px;align-items:baseline;text-decoration:none;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:left}
+.tcard:hover{border-color:var(--accent)}
+.tcard b{font-size:.95rem}
+.tcard span{font-size:.8rem;color:var(--muted);font-family:var(--f-mono)}
 footer{font-size:.78rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 
 /* Dialog */
@@ -232,6 +237,7 @@ dialog form{display:flex;flex-direction:column;max-height:calc(100dvh - 26px)}
     <div class="tripsel">
       <select id="tripSel" aria-label="Ferien wählen"></select>
       <button class="icon edit" id="tripEdit" title="Ferien bearbeiten" aria-label="Ferien bearbeiten">✎</button>
+      <button class="icon" id="tripShare" title="Link dieser Ferien kopieren" aria-label="Link kopieren" hidden>🔗</button>
       <button class="icon edit" id="tripNew" title="Neue Ferien" aria-label="Neue Ferien">＋</button>
     </div>
   </header>
@@ -272,13 +278,13 @@ dialog form{display:flex;flex-direction:column;max-height:calc(100dvh - 26px)}
 
 <script>
 /* ================= Speicherort ================= */
-const OWNER="jaaanick", REPO="ferienhaus", BRANCH="main", FILE="data/ferien.json";
+const OWNER="jaaanick", REPO="ferienhaus", BRANCH="main", DIR="data/t", BASE="/ferienhaus/";
 const API=`https://api.github.com/repos/${OWNER}/${REPO}`;
 const LS={get(k){try{return localStorage.getItem(k)}catch(_){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(_){}},del(k){try{localStorage.removeItem(k)}catch(_){}}};
 const TK="ghToken_ferienhaus";
 let token=LS.get(TK)||"";
-let db={trips:[]}, sha=null, loaded=false;
-let curId=LS.get("ferienhausTrip")||"";
+let db={trips:[]}, loaded=false, curId="";
+const codes=new Map(), files=new Map();   // trip.id → Code / {fid, sha}
 
 /* ================= Hilfen ================= */
 const $=id=>document.getElementById(id);
@@ -556,17 +562,18 @@ const INFO_FIELDS=[["adresse","Adresse"],["koordinaten","🏠 Haus – Koordinat
 
 /* ================= Rendering ================= */
 function render(){
-  const sel=$("tripSel");
-  const trips=[...db.trips].sort((a,b)=>a.start<b.start?1:-1);
-  sel.innerHTML=trips.length?trips.map(t=>`<option value="${t.id}" ${t.id===curId?"selected":""}>${esc(t.name)} · ${t.start.slice(0,4)}</option>`).join(""):`<option value="">Noch keine Ferien</option>`;
-  sel.disabled=!trips.length;
-  $("tripEdit").hidden=!T();
+  const sel=$("tripSel"), kn=known(), cc=T()?codes.get(curId):"";
+  sel.innerHTML=(cc?"":`<option value="">${kn.length?"Ferien wählen …":"Keine Ferien"}</option>`)+kn.map(k=>`<option value="${esc(k.code)}" ${k.code===cc?"selected":""}>${esc(k.name)}${k.start?" · "+k.start.slice(0,4):""}</option>`).join("");
+  sel.disabled=!kn.length;
+  $("tripEdit").hidden=!T(); $("tripShare").hidden=!T();
   const t=T();
   $("jump").hidden=!t;
   if(!t){
     $("infobar").hidden=true;
     $("title").textContent="Ferienhaus-Planer";$("subtitle").textContent="Zimmer, Belegung und Kosten fair aufteilen";
-    $("main").innerHTML=loaded?`<div class="hero"><b>Noch keine Ferien erfasst</b><span>Ferienhaus mit Datum und Zimmern anlegen, dann Personen eintragen und Kosten erfassen.</span>${token?`<button class="btn" onclick="tripDialog()">Erste Ferien erfassen</button>`:""}</div>`:"";
+    $("main").innerHTML=!loaded?"":`<div class="hero">${notFound?`<b>Link ungültig</b><span>Zu diesem Code gibt es keine Ferien (mehr). Bitte den Link prüfen.</span>`:kn.length?`<b>Deine Ferien auf diesem Gerät</b>`:`<b>Ferienhaus-Planer</b><span>Jede Ferien hat einen eigenen, geheimen Link. Öffne den Link, den du erhalten hast.</span>`}
+      ${kn.length?`<div class="tlist">${kn.map(k=>`<a class="tcard" href="${BASE}${esc(k.code)}"><b>${esc(k.name)}</b><span>${k.start?fdy(k.start):""}</span></a>`).join("")}</div>`:""}
+      ${token?`<button class="btn" onclick="tripDialog()">＋ Neue Ferien erfassen</button>`:""}</div>`;
     return;
   }
   $("title").textContent=t.name;
@@ -846,7 +853,8 @@ function tripDialog(t){
       sync(); rooms=rooms.filter(r=>r.name.trim()||r.beds>0).map(r=>({id:r.id,name:r.name.trim()||"Zimmer",beds:Math.max(0,parseInt(r.beds)||0)}));
       const info={};for(const[k]of INFO_FIELDS){const v=F("i_"+k).value.trim();if(v)info[k]=v}
       const links=F("links").value.split(/[\s,]+/).map(x=>x.trim()).filter(x=>/^https?:\/\//i.test(x));
-      if(isNew){const nt={id:uid(),name,ort:F("ort").value.trim(),start:s,end:e,rooms,info,links,people:[],stays:[],costs:[],payments:[],round5:true};db.trips.push(nt);curId=nt.id;LS.set("ferienhausTrip",curId)}
+      if(isNew){const nt={id:uid(),name,ort:F("ort").value.trim(),start:s,end:e,rooms,info,links,people:[],stays:[],costs:[],payments:[],round5:true};
+        const code=newCode();db.trips.push(nt);curId=nt.id;codes.set(nt.id,code);files.set(nt.id,{fid:null,sha:null});notFound=false;setUrl(code,true)}
       else{
         const kept=new Set(rooms.map(r=>r.id));
         for(const st of t.stays)if(st.roomId&&!kept.has(st.roomId))st.roomId="";
@@ -854,7 +862,7 @@ function tripDialog(t){
       }
       commit();
     },
-    onDelete:isNew?null:()=>{if(!confirm(`«${t.name}» mit allen Personen und Kosten löschen?`))return false;db.trips=db.trips.filter(x=>x.id!==t.id);curId=(db.trips[0]||{}).id||"";commit()},
+    onDelete:isNew?null:()=>{if(!confirm(`«${t.name}» mit allen Personen und Kosten endgültig löschen? Der Link funktioniert danach nicht mehr.`))return false;deleteTrip(t)},
     delLabel:"Ferien löschen"
   });
   const box=$("rooms");
@@ -1103,67 +1111,117 @@ function setStatus(t,warn){const s=$("status");s.textContent=t;s.classList.toggl
 const b64enc=s=>btoa(unescape(encodeURIComponent(s)));
 const b64dec=s=>decodeURIComponent(escape(atob(s.replace(/\s/g,""))));
 function hdr(json,tk=token){const h={"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"};if(tk)h.Authorization="Bearer "+tk;if(json)h["Content-Type"]="application/json";return h}
-const fileUrl=`${API}/contents/${FILE}`;
-function normalize(d){
-  const trips=Array.isArray(d&&d.trips)?d.trips:[];
-  for(const t of trips){for(const k of ["rooms","people","stays","costs","payments"])if(!Array.isArray(t[k]))t[k]=[];
-    t.people.forEach((p,i)=>{if(typeof p.hue!=="number")p.hue=HUES[i%HUES.length]});
-    if(!t.fees||typeof t.fees!=="object")t.fees={};
-    for(const c of [...t.costs]){
-      if(c.unit==="staffel"&&toRp(c.kid)>0){if(!toRp(t.fees.kidNight))t.fees.kidNight=c.kid;if(!t.fees.paidBy)t.fees.paidBy=c.paidBy||"";delete c.kid}
-      if(c.unit==="hund_nacht"||c.unit==="hund_total"){const k=c.unit==="hund_nacht"?"dogNight":"dogFlat";if(!toRp(t.fees[k]))t.fees[k]=c.amount;if(!t.fees.paidBy)t.fees.paidBy=c.paidBy||"";t.costs.splice(t.costs.indexOf(c),1)}
-    }}
-  return {trips};
+/* Jede Ferien liegt verschlüsselt in data/t/<id>.json.
+   id und Schlüssel werden aus dem geheimen Code im Link abgeleitet (SHA-256, AES-256-GCM).
+   Ohne Code sind Datei und Inhalt nicht zuzuordnen bzw. nicht lesbar. */
+const ALPH="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+function newCode(){const a=crypto.getRandomValues(new Uint32Array(16));return [...a].map(x=>ALPH[x%ALPH.length]).join("")}
+const TE=new TextEncoder();
+const sha256=async s=>new Uint8Array(await crypto.subtle.digest("SHA-256",TE.encode(s)));
+const hex=b=>[...b].map(x=>x.toString(16).padStart(2,"0")).join("");
+const u8b64=u=>{let s="";for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)};
+const b64u8=s=>Uint8Array.from(atob(s.replace(/\s/g,"")),c=>c.charCodeAt(0));
+const fileIdOf=async c=>hex(await sha256("ferienhaus:id:"+c)).slice(0,24);
+const keyOf=async c=>crypto.subtle.importKey("raw",await sha256("ferienhaus:key:"+c),"AES-GCM",false,["encrypt","decrypt"]);
+async function seal(code,obj){const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},await keyOf(code),TE.encode(JSON.stringify(obj))));
+  return {v:1,iv:u8b64(iv),ct:u8b64(ct)}}
+async function unseal(code,doc){const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:b64u8(doc.iv)},await keyOf(code),b64u8(doc.ct));return JSON.parse(new TextDecoder().decode(pt))}
+
+/* Liste der auf diesem Gerät bekannten Ferien (nur lokal) */
+const known=()=>{try{const a=JSON.parse(LS.get("fhKnown")||"[]");return Array.isArray(a)?a.sort((x,y)=>(y.start||"")<(x.start||"")?-1:1):[]}catch(_){return []}};
+function remember(code,t){const a=known().filter(k=>k.code!==code);if(t)a.push({code,name:t.name,start:t.start});LS.set("fhKnown",JSON.stringify(a));if(t)LS.set("fhLast",code)}
+function codeFromUrl(){
+  const q=new URLSearchParams(location.search).get("c"); if(q)return q;
+  if(location.pathname.startsWith(BASE)){const p=location.pathname.slice(BASE.length).split("/")[0];if(p&&p!=="index.html")return decodeURIComponent(p)}
+  return location.hash.slice(1);
 }
-async function fetchDb(){
-  const r=await fetch(`${fileUrl}?ref=${BRANCH}&t=${Date.now()}`,{headers:hdr(),cache:"no-store"});
-  if(r.status===404)return {sha:null,doc:{trips:[]}};
+function setUrl(code,push){const u=BASE+(code||"");if(location.pathname+location.search+location.hash!==u)history[push?"pushState":"replaceState"](null,"",u)}
+const shareUrl=c=>location.origin+BASE+c;
+
+function normTrip(t){
+  for(const k of ["rooms","people","stays","costs","payments"])if(!Array.isArray(t[k]))t[k]=[];
+  t.people.forEach((p,i)=>{if(typeof p.hue!=="number")p.hue=HUES[i%HUES.length]});
+  if(!t.fees||typeof t.fees!=="object")t.fees={};
+  for(const c of [...t.costs]){
+    if(c.unit==="staffel"&&toRp(c.kid)>0){if(!toRp(t.fees.kidNight))t.fees.kidNight=c.kid;if(!t.fees.paidBy)t.fees.paidBy=c.paidBy||"";delete c.kid}
+    if(c.unit==="hund_nacht"||c.unit==="hund_total"){const k=c.unit==="hund_nacht"?"dogNight":"dogFlat";if(!toRp(t.fees[k]))t.fees[k]=c.amount;if(!t.fees.paidBy)t.fees.paidBy=c.paidBy||"";t.costs.splice(t.costs.indexOf(c),1)}
+  }
+  return t;
+}
+const fileUrl=fid=>`${API}/contents/${DIR}/${fid}.json`;
+async function fetchTrip(code){
+  const fid=await fileIdOf(code);
+  const r=await fetch(`${fileUrl(fid)}?ref=${BRANCH}&t=${Date.now()}`,{headers:hdr(),cache:"no-store"});
+  if(r.status===404)return null;
   if(!r.ok){const e=new Error("HTTP "+r.status);e.status=r.status;throw e}
-  const j=await r.json(); return {sha:j.sha,doc:JSON.parse(b64dec(j.content))};
+  const j=await r.json();
+  let trip; try{trip=await unseal(code,JSON.parse(b64dec(j.content)))}catch(_){return null}
+  return {fid,sha:j.sha,trip:normTrip(trip)};
 }
-let dirty=false,inflight=0,saveT=null,chain=Promise.resolve();
-async function load(quiet){
+let dirty=false,inflight=0,saveT=null,chain=Promise.resolve(),notFound=false;
+async function openCode(code,quiet){
+  if(!code){curId="";notFound=false;loaded=true;render();setStatus(token?"Bereit":"Nur Ansicht");return}
   if(!quiet)setStatus("Wird geladen …");
   try{
-    const {sha:s,doc}=await fetchDb();
+    const res=await fetchTrip(code);
     if(dirty||inflight)return;
-    sha=s; db=normalize(doc); loaded=true;
-    if(!T())curId=([...db.trips].sort((a,b)=>a.start<b.start?1:-1)[0]||{}).id||"";
+    loaded=true;
+    if(!res){notFound=true;curId="";remember(code,null);render();setStatus("Link ungültig",true);return}
+    notFound=false;
+    const t=res.trip; db.trips=db.trips.filter(x=>x.id!==t.id); db.trips.push(t);
+    codes.set(t.id,code); files.set(t.id,{fid:res.fid,sha:res.sha}); curId=t.id; remember(code,t);
     if(!dlg.open)render();
     setStatus((token?"Synchron ":"Nur Ansicht · Stand ")+hhmm());
   }catch(e){
+    loaded=true;render();
     setStatus(e.status===401?"Token ungültig oder abgelaufen":e.status===403?"GitHub-Limit erreicht, bitte später nochmals laden":"Laden fehlgeschlagen ("+(e.status||"offline")+")",true);
     if(e.status===401)showAuth(true,"Der gespeicherte Token wurde abgelehnt. Bitte neuen Token eingeben.");
   }
 }
-async function put(){
-  const body={trips:db.trips,updated:new Date().toISOString()};
-  const content=b64enc(JSON.stringify(body,null,1)+"\n");
+const load=quiet=>openCode(T()?codes.get(curId):codeFromUrl(),quiet);
+async function putTrip(t){
+  const code=codes.get(t.id), f=files.get(t.id)||{}; if(!code)return;
+  if(!f.fid)f.fid=await fileIdOf(code);
+  const content=b64enc(JSON.stringify({...(await seal(code,t)),updated:new Date().toISOString()})+"\n");
   for(let i=0;i<3;i++){
-    const r=await fetch(fileUrl,{method:"PUT",headers:hdr(true),body:JSON.stringify({message:"Ferienhaus aktualisiert",content,branch:BRANCH,...(sha?{sha}:{})})});
-    if(r.ok){sha=(await r.json()).content.sha;return}
-    if(r.status===409||r.status===422){try{sha=(await fetchDb()).sha}catch(_){}continue}
+    const r=await fetch(fileUrl(f.fid),{method:"PUT",headers:hdr(true),body:JSON.stringify({message:"Ferienhaus aktualisiert",content,branch:BRANCH,...(f.sha?{sha:f.sha}:{})})});
+    if(r.ok){f.sha=(await r.json()).content.sha;files.set(t.id,f);return}
+    if(r.status===409||r.status===422){try{const x=await fetch(`${fileUrl(f.fid)}?ref=${BRANCH}&t=${Date.now()}`,{headers:hdr(),cache:"no-store"});f.sha=x.ok?(await x.json()).sha:null}catch(_){}continue}
     const e=new Error("HTTP "+r.status);e.status=r.status;throw e;
   }
   throw new Error("Konflikt");
 }
-function write(){
+function write(t){
   dirty=false;inflight++;
-  chain=chain.then(put).then(()=>setStatus("Gespeichert "+hhmm()))
+  chain=chain.then(()=>putTrip(t)).then(()=>setStatus("Gespeichert "+hhmm()))
     .catch(e=>{dirty=true;
       if(e.status===401||e.status===403||e.status===404){setStatus("Keine Schreibrechte: Token prüfen",true);showAuth(true,"Speichern abgelehnt ("+e.status+"). Token prüfen: Zugriff auf ferienhaus mit «Contents: Read and write».")}
       else setStatus("Speichern fehlgeschlagen ("+(e.status||e.message)+"), nächste Änderung versucht es erneut",true)})
     .finally(()=>{inflight--});
 }
+let pending=null;
 function commit(){
-  if(curId)LS.set("ferienhausTrip",curId);
+  const t=T(); if(t&&codes.get(t.id))remember(codes.get(t.id),t);
   render();
   if(!token){showAuth(true);return}
-  dirty=true;setStatus("Speichert …");clearTimeout(saveT);saveT=setTimeout(()=>{saveT=null;write()},700);
+  if(!t)return;
+  dirty=true;pending=t;setStatus("Speichert …");clearTimeout(saveT);saveT=setTimeout(()=>{saveT=null;write(pending)},700);
 }
-function flushNow(){if(saveT){clearTimeout(saveT);saveT=null;write()}}
+function flushNow(){if(saveT){clearTimeout(saveT);saveT=null;write(pending)}}
+async function deleteTrip(t){
+  flushNow(); await chain;
+  const code=codes.get(t.id), f=files.get(t.id)||{};
+  try{
+    if(f.sha){if(!f.fid)f.fid=await fileIdOf(code);
+      const r=await fetch(fileUrl(f.fid),{method:"DELETE",headers:hdr(true),body:JSON.stringify({message:"Ferien gelöscht",sha:f.sha,branch:BRANCH})});
+      if(!r.ok&&r.status!==404)throw new Error("HTTP "+r.status)}
+    db.trips=db.trips.filter(x=>x!==t); remember(code,null); curId=""; setUrl("",true); render(); setStatus("Ferien gelöscht");
+  }catch(e){setStatus("Löschen fehlgeschlagen ("+e.message+")",true)}
+}
 addEventListener("pagehide",flushNow);
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")flushNow();else if(!dirty&&!inflight&&!dlg.open)load(true)});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")flushNow();else if(!dirty&&!inflight&&!dlg.open&&T())load(true)});
+addEventListener("popstate",()=>{flushNow();openCode(codeFromUrl())});
 
 /* ================= Token ================= */
 function showAuth(show,msg){
@@ -1183,7 +1241,7 @@ $("tokSave").onclick=async()=>{
   const t=$("tok").value.trim();if(!t)return;
   $("tokSave").disabled=true;$("tokMsg").classList.remove("err");$("tokMsg").textContent="Prüfe Token …";
   const ok=await canWrite(t);
-  if(ok===true){token=t;LS.set(TK,t);$("tok").value="";updateWho();render();load()}
+  if(ok===true){token=t;LS.set(TK,t);$("tok").value="";updateWho();render();openCode(codeFromUrl())}
   else{$("tokMsg").textContent=ok===401?"Token ungültig.":ok===403?"Token hat keine Schreibrechte auf ferienhaus.":"Kein Zugriff auf das Repository ("+(ok||"offline")+").";$("tokMsg").classList.add("err")}
   $("tokSave").disabled=false;
 };
@@ -1192,13 +1250,19 @@ $("tok").addEventListener("keydown",e=>{if(e.key==="Enter")$("tokSave").click()}
 $("tokClear").onclick=()=>{if(!confirm("Token auf diesem Gerät entfernen? Danach nur noch Ansicht."))return;token="";LS.del(TK);updateWho();render();setStatus("Nur Ansicht")};
 
 /* ================= Start ================= */
-$("tripSel").onchange=e=>{curId=e.target.value;LS.set("ferienhausTrip",curId);render();scrollTo({top:0})};
+$("tripSel").onchange=e=>{const c=e.target.value;if(!c)return;flushNow();setUrl(c,true);curId="";openCode(c);scrollTo({top:0})};
+$("tripShare").onclick=()=>{const c=codes.get(curId);if(!c)return;const u=shareUrl(c);
+  navigator.clipboard.writeText(u).then(()=>setStatus("Link kopiert – nur wer ihn hat, sieht diese Ferien"),()=>prompt("Link kopieren:",u))};
 $("tripNew").onclick=()=>token?tripDialog():showAuth(true,"");
 $("tripEdit").onclick=()=>token?tripDialog(T()):showAuth(true,"");
 (async()=>{
   // Bestehenden Ferienplaner-Token mitbenutzen, falls er auch für dieses Repo gilt
   if(!token){const old=LS.get("ghToken");if(old&&await canWrite(old)===true){token=old;LS.set(TK,old)}}
-  updateWho();render();load();
+  updateWho();
+  let c=codeFromUrl();
+  if(!c&&LS.get("fhLast")&&known().some(k=>k.code===LS.get("fhLast")))c=LS.get("fhLast");
+  setUrl(c,false);
+  openCode(c);
 })();
 </script>
 </body>
