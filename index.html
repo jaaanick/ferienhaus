@@ -182,6 +182,17 @@ textarea.inp{font:inherit;font-size:.9rem;resize:vertical;border:1px solid var(-
 .toast.err{color:var(--neg-ink)}
 .hero{border:1px dashed var(--muted);border-radius:12px;padding:28px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;color:var(--muted)}
 .hero b{color:var(--ink);font-size:1.1rem}
+.gate{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:22px;max-width:560px;width:100%;margin:24px auto 0;display:flex;flex-direction:column;gap:14px;box-shadow:0 10px 30px var(--shadow)}
+.gh{display:flex;gap:14px;align-items:flex-start}
+.gi{font-size:1.6rem;line-height:1}
+.gh b{font-size:1.1rem}
+.gh p{margin:4px 0 0;color:var(--muted);font-size:.9rem}
+.gf{display:flex;gap:8px;align-items:flex-end}
+.gf .fl{flex:1}
+.gsec{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:8px}
+form.gsec{flex-direction:row}
+.gate .tlist{width:100%}
+@media (max-width:520px){.gf,form.gsec{flex-direction:column;align-items:stretch}}
 .tlist{display:flex;flex-direction:column;gap:6px;width:min(420px,100%)}
 .tcard{display:flex;justify-content:space-between;gap:12px;align-items:baseline;text-decoration:none;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:left}
 .tcard:hover{border-color:var(--accent)}
@@ -571,11 +582,25 @@ function render(){
   if(!t){
     $("infobar").hidden=true;
     $("title").textContent="Ferienhaus-Planer";$("subtitle").textContent="Zimmer, Belegung und Kosten fair aufteilen";
-    $("main").innerHTML=!loaded?"":`<div class="hero">${notFound?`<b>Link ungültig</b><span>Zu diesem Code gibt es keine Ferien (mehr). Bitte den Link prüfen.</span>`:kn.length?`<b>Deine Ferien auf diesem Gerät</b>`:`<b>Ferienhaus-Planer</b><span>Jede Ferien hat einen eigenen, geheimen Link. Öffne den Link, den du erhalten hast.</span>`}
-      ${kn.length?`<div class="tlist">${kn.map(k=>`<a class="tcard" href="${BASE}${esc(k.code)}"><b>${esc(k.name)}</b><span>${k.start?fdy(k.start):""}</span></a>`).join("")}</div>`:""}
-      ${token?`<button class="btn" onclick="tripDialog()">＋ Neue Ferien erfassen</button>`:""}</div>`;
+    $("viewNote").hidden=true; $("auth").hidden=true;
+    $("main").innerHTML=!loaded?"":`<div class="gate">
+      <div class="gh"><span class="gi">🔒</span><div><b>${notFound?"Link ungültig":"Bitte Link mit Code öffnen"}</b>
+        <p>${notFound?"Zu diesem Code gibt es keine Ferien (mehr). ":""}Bitte den korrekten Link mit Code eingeben${token?".":" oder einen Token eingeben, um zu bearbeiten."}</p></div></div>
+      <form class="gf" id="gateCode"><label class="fl"><span>Link oder Code</span><input class="inp" name="gcode" autocomplete="off" spellcheck="false" placeholder="https://jaaanick.github.io/ferienhaus/… oder Code"></label><button class="btn">Öffnen</button></form>
+      <div class="toast err" id="gateCodeMsg"></div>
+      ${kn.length?`<div class="gsec"><h3>Zuletzt auf diesem Gerät geöffnet</h3><div class="tlist">${kn.map(k=>`<a class="tcard" href="${BASE}${esc(k.code)}"><b>${esc(k.name)}</b><span>${k.start?fdy(k.start):""}</span></a>`).join("")}</div></div>`:""}
+      ${token?`<div class="gsec"><h3>Bearbeiten aktiv</h3><button class="btn" type="button" onclick="tripDialog()">＋ Neue Ferien erfassen</button></div>`
+      :`<form class="gf gsec" id="gateTok"><label class="fl"><span>GitHub-Token (nur zum Bearbeiten)</span><input class="inp" name="gtok" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label><button class="btn ghost">Freischalten</button></form>
+        <div class="toast" id="gateTokMsg"></div>`}
+    </div>`;
+    $("gateCode").onsubmit=e=>{e.preventDefault();const v=e.target.gcode.value.trim();
+      const c=(v.match(/\/ferienhaus\/(?:\?c=)?([A-Za-z0-9]{6,})/)||v.match(/[?&]c=([A-Za-z0-9]{6,})/)||v.match(/^([A-Za-z0-9]{6,})$/)||[])[1];
+      if(!c){$("gateCodeMsg").textContent="Kein gültiger Link oder Code.";return}
+      setUrl(c,true);openCode(c)};
+    if($("gateTok"))$("gateTok").onsubmit=e=>{e.preventDefault();tryToken(e.target.gtok.value.trim(),$("gateTokMsg"))};
     return;
   }
+  if(!token&&$("auth").hidden)$("viewNote").hidden=false;
   $("title").textContent=t.name;
   $("subtitle").textContent=[t.ort,range(t.start,t.end)].filter(Boolean).join(" · ");
   renderInfo(t);
@@ -1232,19 +1257,18 @@ function showAuth(show,msg){
 function updateWho(){
   document.body.classList.toggle("ro",!token);
   $("tokClear").hidden=!token;$("who").textContent=token?"Bearbeiten aktiv auf diesem Gerät.":"";
-  $("auth").hidden=true; $("viewNote").hidden=!!token;
+  $("auth").hidden=true; $("viewNote").hidden=!!token||!T();
 }
 async function canWrite(t){
   try{const r=await fetch(API,{headers:hdr(false,t),cache:"no-store"});if(!r.ok)return r.status;const j=await r.json();return j.permissions&&j.permissions.push?true:403}catch(_){return 0}
 }
-$("tokSave").onclick=async()=>{
-  const t=$("tok").value.trim();if(!t)return;
-  $("tokSave").disabled=true;$("tokMsg").classList.remove("err");$("tokMsg").textContent="Prüfe Token …";
+async function tryToken(t,msg){
+  if(!t)return; msg.classList.remove("err"); msg.textContent="Prüfe Token …";
   const ok=await canWrite(t);
-  if(ok===true){token=t;LS.set(TK,t);$("tok").value="";updateWho();render();openCode(codeFromUrl())}
-  else{$("tokMsg").textContent=ok===401?"Token ungültig.":ok===403?"Token hat keine Schreibrechte auf ferienhaus.":"Kein Zugriff auf das Repository ("+(ok||"offline")+").";$("tokMsg").classList.add("err")}
-  $("tokSave").disabled=false;
-};
+  if(ok===true){token=t;LS.set(TK,t);$("tok").value="";updateWho();render();openCode(T()?codes.get(curId):codeFromUrl());setStatus("Bearbeiten aktiv")}
+  else{msg.textContent=ok===401?"Token ungültig.":ok===403?"Token hat keine Schreibrechte auf ferienhaus.":"Kein Zugriff auf das Repository ("+(ok||"offline")+").";msg.classList.add("err")}
+}
+$("tokSave").onclick=async()=>{$("tokSave").disabled=true;await tryToken($("tok").value.trim(),$("tokMsg"));$("tokSave").disabled=false};
 $("authOpen").onclick=()=>showAuth(true);
 $("tok").addEventListener("keydown",e=>{if(e.key==="Enter")$("tokSave").click()});
 $("tokClear").onclick=()=>{if(!confirm("Token auf diesem Gerät entfernen? Danach nur noch Ansicht."))return;token="";LS.del(TK);updateWho();render();setStatus("Nur Ansicht")};
