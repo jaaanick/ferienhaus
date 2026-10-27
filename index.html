@@ -334,31 +334,119 @@ footer{justify-content:center}
   :root:not([data-theme="light"]) a.ii:hover,:root:not([data-theme="light"]) .icon:hover,:root:not([data-theme="light"]) .btn.ghost:hover{background:#2c2c2e}
   :root:not([data-theme="light"]) body:not(.ro) tr.click:hover td{background:#18181a}}
 @media (max-width:620px){.wrap{gap:34px;padding-block:28px 56px}.infobar{margin-top:-20px}.rentrow{grid-template-columns:1fr}}
+
+/* ===== Stufe 2: Anmutung wie apple.com ===== */
+:root{--blue:#0071e3;--link:#0066cc;--nav:rgba(255,255,255,.8);--tile:#f5f5f7}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--blue:#0071e3;--link:#2997ff;--nav:rgba(22,22,23,.8);--tile:#161617}}
+:root[data-theme="dark"]{--blue:#0071e3;--link:#2997ff;--nav:rgba(22,22,23,.8);--tile:#161617}
+html{scroll-padding-top:64px;scroll-behavior:smooth}
+body{font-size:17px;line-height:1.47;letter-spacing:-.022em}
+a{color:var(--link)}
+/* Navigationsleiste */
+.gnav{position:sticky;top:0;z-index:30;height:48px;background:var(--nav);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(0,0,0,.06)}
+.gin{max-width:1024px;height:100%;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:18px}
+.brand{display:flex;align-items:center;gap:7px;color:var(--ink);text-decoration:none;font-weight:600;font-size:15px;letter-spacing:-.01em;white-space:nowrap}
+.brand svg{width:20px;height:20px}
+.gnav .jump{flex:1;display:flex;justify-content:center;gap:2px;overflow-x:auto;scrollbar-width:none;margin:0}
+.gnav .jump::-webkit-scrollbar{display:none}
+.gnav .jump a{font-size:12px;letter-spacing:-.01em;color:var(--ink);opacity:.8;background:none;padding:6px 10px;font-weight:400;white-space:nowrap}
+.gnav .jump a:hover{opacity:1;background:none;color:var(--ink)}
+.gnav .tripsel{margin-left:auto;gap:4px}
+.gnav .tripsel select{font-size:12px;padding:6px 26px 6px 12px;max-width:190px;background-color:rgba(0,0,0,.05)}
+.gnav .icon{min-width:32px;height:32px;background:transparent;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:0}
+.gnav .icon svg{width:18px;height:18px}
+.gnav .icon:hover{background:rgba(0,0,0,.05)}
+@media (max-width:760px){.gin{gap:8px}.brand span{display:none}.gnav .jump{justify-content:flex-start}.gnav .tripsel select{max-width:120px}}
+/* Bühne */
+.wrap{max-width:1024px;padding-block:0 0;gap:0}
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:0;padding:64px 0 52px;background:var(--tile);box-shadow:0 0 0 100vmax var(--tile);clip-path:inset(0 -100vmax)}
+.hero h1{font-size:clamp(2.5rem,6vw,3.5rem);font-weight:600;letter-spacing:-.005em;line-height:1.07}
+.hero .sub{font-size:clamp(1.2rem,2.4vw,1.75rem);font-weight:400;color:var(--ink);letter-spacing:.007em;line-height:1.15;margin-top:6px}
+.cta{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:22px}
+.cta .btn{font-size:17px;padding:11px 22px}
+.hero .infobar{margin-top:28px;align-items:center;width:100%}
+.hero .iis{justify-content:center}
+.hero .ii{background:var(--page)}
+.hero .imore{background:var(--page);text-align:left;width:100%;max-width:760px}
+.hero .status{margin-top:18px;font-size:12px}
+/* Kennzahlen */
+.hstats{margin:40px 0 0;gap:12px}
+.hstats .stat{background:var(--tile);border-radius:18px;padding:22px 24px;align-items:center;text-align:center}
+.hstats .stat .v{font-size:2.1rem;font-weight:600}
+/* Bereiche */
+#main{display:flex;flex-direction:column}
+.section{padding:72px 0 76px;gap:22px}
+.section.band{background:var(--tile);box-shadow:0 0 0 100vmax var(--tile);clip-path:inset(0 -100vmax)}
+.shead{flex-direction:column;align-items:center;text-align:center;gap:0}
+.shead h2{font-size:clamp(2rem,4.2vw,3rem);font-weight:600;letter-spacing:-.003em;line-height:1.08}
+.shead .lead{order:1;margin:8px 0 0;font-size:clamp(1.1rem,2vw,1.5rem);color:var(--muted);letter-spacing:.004em}
+.shead .tools{order:2;margin-top:22px;justify-content:center;gap:12px}
+.shead .tools:empty{display:none}
+.section>.hint{text-align:center}
+.section.band .tablewrap,.section.band .transfers,.section.band .plan{background:var(--page);border-color:transparent}
+.section.band .okbox{background:var(--page)}
+.section h3{text-align:center;font-size:1.3rem;font-weight:600;margin-top:22px;letter-spacing:-.01em}
+.plan,.tablewrap,.transfers,.box{border-radius:18px}
+/* Knöpfe wie apple.com */
+.btn{background:var(--blue);color:#fff;border:1px solid transparent;border-radius:980px;padding:9px 18px;font-size:15px;font-weight:400;letter-spacing:-.01em}
+.btn:hover{background:#0077ed}
+.btn.ghost{background:transparent;color:var(--link);border:1px solid var(--link)}
+.btn.ghost:hover{background:var(--link);color:#fff}
+.btn.danger{background:transparent;color:var(--neg-ink);border:1px solid currentColor}
+.btn.danger:hover{background:var(--neg-bg)}
+.btn.sm{padding:7px 15px;font-size:14px}
+.linkbtn{color:var(--link)}
+.chip{background:var(--page);border:1px solid var(--line);font-weight:400}
+.section.band .chip{background:var(--page)}
+.chips{justify-content:center}
+/* Tabellen */
+table{font-size:15px}
+th{font-size:12px;color:var(--muted)}
+/* Dialog */
+.dh h2{font-size:1.5rem;font-weight:600}
+.df .btn.ghost{color:var(--ink);border-color:var(--line)}
+.df .btn.ghost:hover{background:var(--tile);color:var(--ink)}
+/* Startseite */
+.gate{margin:64px auto;background:var(--tile)}
+/* Fuss */
+.gfoot{justify-content:center;font-size:12px;color:var(--muted);padding:22px 0 30px;background:var(--tile);box-shadow:0 0 0 100vmax var(--tile);clip-path:inset(0 -100vmax);border-top:1px solid var(--line)}
+.viewnote{padding:20px 0 0;font-size:12px}
+.box.auth{margin:24px 0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .gnav{border-bottom-color:rgba(255,255,255,.08)}
+  :root:not([data-theme="light"]) .btn{background:var(--blue);color:#fff}
+  :root:not([data-theme="light"]) .btn.ghost{background:transparent;color:var(--link)}
+  :root:not([data-theme="light"]) .gnav .icon:hover,:root:not([data-theme="light"]) .gnav .tripsel select{background-color:rgba(255,255,255,.08)}}
+@media (max-width:620px){.hero{padding:44px 0 40px}.section{padding:52px 0 56px}.hstats{margin-top:28px}.hstats .stat .v{font-size:1.6rem}}
 </style>
 </head>
 <body class="ro">
-<div class="wrap">
-  <header>
-    <div>
-      <h1 id="title">Ferienhaus-Planer</h1>
-      <div class="sub" id="subtitle">Zimmer, Belegung und Kosten fair aufteilen</div>
+<nav class="gnav" aria-label="Navigation">
+  <div class="gin">
+    <a class="brand" href="/ferienhaus/" aria-label="Ferienhaus-Planer Startseite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7v8.5a1 1 0 0 1-1 1h-5v-6h-5v6h-5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span>Ferienhaus</span></a>
+    <div class="jump" id="jump" hidden>
+      <a href="#top">Übersicht</a><a href="#sBelegung">Belegung</a><a href="#sPersonen">Personen</a><a href="#sKosten">Kosten</a><a href="#sAbrechnung">Abrechnung</a>
     </div>
     <div class="tripsel">
       <select id="tripSel" aria-label="Ferien wählen"></select>
-      <button class="icon edit" id="tripEdit" title="Ferien bearbeiten" aria-label="Ferien bearbeiten">✎</button>
-      <button class="icon" id="tripShare" title="Link dieser Ferien kopieren" aria-label="Link kopieren" hidden>🔗</button>
-      <button class="icon edit" id="tripNew" title="Neue Ferien" aria-label="Neue Ferien">＋</button>
+      <button class="icon edit" id="tripEdit" title="Ferien bearbeiten" aria-label="Ferien bearbeiten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z M13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+      <button class="icon" id="tripShare" title="Link dieser Ferien kopieren" aria-label="Link kopieren" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="icon edit" id="tripNew" title="Neue Ferien" aria-label="Neue Ferien"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
     </div>
-  </header>
-  <div class="infobar" id="infobar" hidden></div>
-
-
-  <div class="bar">
-    <nav class="jump" id="jump" hidden>
-      <a href="#sBelegung">Belegung</a><a href="#sPersonen">Personen</a><a href="#sKosten">Kosten</a><a href="#sAbrechnung">Abrechnung</a>
-    </nav>
-    <div class="status" id="status">Wird geladen …</div>
   </div>
+</nav>
+<div class="wrap" id="top">
+  <header class="hero">
+    <h1 id="title">Ferienhaus-Planer</h1>
+    <div class="sub" id="subtitle">Zimmer, Belegung und Kosten fair aufteilen</div>
+    <div class="cta" id="heroCta" hidden>
+      <button class="btn edit" type="button" id="ctaEdit">Ferien bearbeiten</button>
+      <button class="btn ghost" type="button" id="ctaShare">Link teilen</button>
+    </div>
+    <div class="infobar" id="infobar" hidden></div>
+    <div class="status" id="status">Wird geladen …</div>
+  </header>
+
+
 
   <div id="main"></div>
 
@@ -377,7 +465,7 @@ footer{justify-content:center}
     </div>
     <div class="toast" id="tokMsg" role="status"></div>
   </div>
-  <footer>
+  <footer class="gfoot">
     <span id="who"></span>
     <button class="linkbtn" id="tokClear" hidden>Token auf diesem Gerät entfernen</button>
   </footer>
@@ -677,7 +765,7 @@ function render(){
   sel.disabled=!kn.length;
   $("tripEdit").hidden=!T(); $("tripShare").hidden=!T();
   const t=T();
-  $("jump").hidden=!t;
+  $("jump").hidden=!t; $("heroCta").hidden=!t;
   if(!t){
     $("infobar").hidden=true;
     $("title").textContent="Ferienhaus-Planer";$("subtitle").textContent="Zimmer, Belegung und Kosten fair aufteilen";
@@ -716,6 +804,7 @@ function render(){
   ${secPeople(t,lg)}
   ${secCosts(t)}
   ${secSettle(t,lg)}`;
+  decorate();
   wire(t);
 }
 
@@ -854,6 +943,14 @@ function secSettle(t,lg){
     ${pays?`<h3>Bereits bezahlt</h3><div class="transfers">${pays}</div>`:""}
   </section>`;
   // (Zahlungsvorschläge werden in wire() an die Buttons gebunden)
+}
+
+const LEADS={sBelegung:"Wer schläft wann wo.",sPersonen:"Alle, die dabei sind.",sKosten:"Was die Ferien kosten.",sAbrechnung:"Wer wem wie viel zahlt."};
+function decorate(){
+  for(const[id,txt]of Object.entries(LEADS)){const sec=$(id);if(!sec)continue;
+    const h=sec.querySelector(".shead h2");if(h&&!sec.querySelector(".lead")){const p=document.createElement("p");p.className="lead";p.textContent=txt;h.after(p)}
+    if(id==="sPersonen"||id==="sAbrechnung")sec.classList.add("band")}
+  const st=document.querySelector("#main .stats"); if(st)st.classList.add("hstats");
 }
 
 /* ================= Interaktion ================= */
@@ -1389,6 +1486,8 @@ $("tokClear").onclick=()=>{if(!confirm("Token auf diesem Gerät entfernen? Danac
 
 /* ================= Start ================= */
 $("tripSel").onchange=e=>{const c=e.target.value;if(!c)return;flushNow();setUrl(c,true);curId="";openCode(c);scrollTo({top:0})};
+$("ctaEdit").onclick=()=>token?tripDialog(T()):showAuth(true,"");
+$("ctaShare").onclick=()=>$("tripShare").onclick();
 $("tripShare").onclick=()=>{const c=codes.get(curId);if(!c)return;const u=shareUrl(c);
   navigator.clipboard.writeText(u).then(()=>setStatus("Link kopiert – nur wer ihn hat, sieht diese Ferien"),()=>prompt("Link kopieren:",u))};
 $("tripNew").onclick=()=>token?tripDialog():showAuth(true,"");
