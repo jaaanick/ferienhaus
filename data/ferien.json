@@ -113,20 +113,6 @@
      "date": "",
      "from": "",
      "to": ""
-    },
-    {
-     "id": "sr0yz8v",
-     "title": "Kurtaxe",
-     "cat": "neben",
-     "amount": "2.5",
-     "unit": "ppn",
-     "mode": "naechte",
-     "who": [],
-     "pct": {},
-     "paidBy": "0t3ovt5",
-     "date": "",
-     "from": "",
-     "to": ""
     }
    ],
    "payments": [],
@@ -147,5 +133,5 @@
    ]
   }
  ],
- "updated": "2026-10-27T07:25:04.001Z"
+ "updated": "2026-10-27T07:26:16.932Z"
 }
