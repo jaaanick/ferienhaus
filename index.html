@@ -474,10 +474,24 @@ function lanes(t,roomId){                 // Aufenthalte eines Zimmers auf Bette
 
 /* ================= Unterkunft-Infos ================= */
 const host=u=>{try{return new URL(u).hostname.replace(/^www\./,"")}catch(_){return u}};
+/* Koordinaten aus «47.12, 8.45», «47.12° N 8.45° E» oder Google-Maps-Links */
+function parseCoords(x){
+  x=String(x||"").trim(); if(!x)return null;
+  const ok=(a,b)=>{a=+a;b=+b;return Math.abs(a)<=90&&Math.abs(b)<=180&&!(a===0&&b===0)?[a,b]:null};
+  let m=x.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)||x.match(/@(-?\d+\.\d+),\s*(-?\d+\.\d+)/)||x.match(/[?&](?:q|query|ll|destination|daddr)=(-?\d+\.\d+)(?:,|%2C)\s*(-?\d+\.\d+)/i);
+  if(m)return ok(m[1],m[2]);
+  m=x.match(/(\d+\.\d+)\s*°?\s*([NS])[,;\s]+(\d+\.\d+)\s*°?\s*([EOW])/i);
+  if(m)return ok((/s/i.test(m[2])?-1:1)*m[1],(/w/i.test(m[4])?-1:1)*m[3]);
+  m=x.match(/^\s*(-?\d{1,2}\.\d{3,})\s*[,;\s]\s*(-?\d{1,3}\.\d{3,})\s*$/);
+  if(m)return ok(m[1],m[2]);
+  return null;
+}
+const pinUrl=x=>{const c=parseCoords(x);if(c)return `https://www.google.com/maps/search/?api=1&query=${c[0]},${c[1]}`;return /^https?:\/\//i.test(String(x).trim())?String(x).trim():null};
 const telHref=x=>"tel:"+String(x).replace(/[^\d+]/g,"");
 function renderInfo(t){
   const i=t.info||{}, links=(t.links||[]).filter(Boolean), it=[];
   if(i.adresse)it.push(`<a class="ii" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.adresse)}" target="_blank" rel="noopener"><b>📍</b>${esc(i.adresse)}</a>`);
+  if(i.koordinaten&&pinUrl(i.koordinaten)){const c=parseCoords(i.koordinaten);it.push(`<a class="ii" href="${esc(pinUrl(i.koordinaten))}" target="_blank" rel="noopener"><b>📌</b>${c?`${c[0].toFixed(5)}, ${c[1].toFixed(5)}`:"Stecknadel"}</a>`)}
   if(i.checkin||i.checkout)it.push(`<span class="ii"><b>🕑</b>${i.checkin?`Check-in ${esc(i.checkin)}`:""}${i.checkin&&i.checkout?" · ":""}${i.checkout?`Check-out ${esc(i.checkout)}`:""}</span>`);
   if(i.maxGaeste)it.push(`<span class="ii"><b>👥</b>max. ${esc(i.maxGaeste)} Gäste</span>`);
   if(i.kontakt)it.push(`<span class="ii"><b>👤</b>${esc(i.kontakt)}</span>`);
@@ -514,6 +528,10 @@ function extractInfo(raw){
   if(co)o.checkout=norm(co[1]);
   const mg=flat.match(/(?:max(?:\.|imal|imum)?\.?\s*|bis (?:zu )?|up to\s*)(\d{1,2})\s*(?:guests|gäste|personen|persons|people|pers\.|betten|beds)/i)||flat.match(/(\d{1,2})\s*(?:gäste|guests)\b/i);
   if(mg)o.maxGaeste=mg[1];
+  {const c=parseCoords((raw.match(/https?:\/\/(?:www\.)?(?:google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|goo\.gl\/maps|maps\.app\.goo\.gl)[^\s)"'\]]*/i)||[])[0])
+     ||parseCoords((raw.match(/"?lat(?:itude)?"?\s*[:=]\s*"?(-?\d+\.\d{3,})"?[\s,]+"?(?:lng|lon|long|longitude)"?\s*[:=]\s*"?(-?\d+\.\d{3,})/i)||[]).slice(1,3).join(","))
+     ||parseCoords((flat.match(/\d+\.\d+\s*°?\s*[NS][,;\s]+\d+\.\d+\s*°?\s*[EOW]/i)||[])[0]);
+   if(c)o.koordinaten=`${c[0]}, ${c[1]}`}
   const em=flat.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}/i); if(em&&!/(sentry|example|wixpress|\.png|\.jpg)/i.test(em[0]))o.email=em[0];
   const ph=flat.match(/(?:\+|00)(?:41|49|43|423|39|33)[\s\d()/.-]{8,16}\d/)||flat.match(/(?:tel(?:efon)?|phone|fon)[.:\s]*((?:0)\d{2}[\s\d/.-]{7,12}\d)/i);
   if(ph)o.telefon=(ph[1]||ph[0]).trim();
@@ -532,7 +550,7 @@ function extractInfo(raw){
   return o;
   function norm(x){x=String(x).replace(".",":");return /:/.test(x)?x.padStart(5,"0"):x.padStart(2,"0")+":00"}
 }
-const INFO_FIELDS=[["adresse","Adresse"],["checkin","Check-in"],["checkout","Check-out"],["maxGaeste","Max. Gäste"],["kontakt","Vermieter / Kontakt"],["telefon","Telefon"],["email","E-Mail"],["anfahrt","Anfahrt / Zugang"],["notizen","Notizen"],["beschreibung","Beschreibung"]];
+const INFO_FIELDS=[["adresse","Adresse"],["koordinaten","Koordinaten / Google-Maps-Link"],["checkin","Check-in"],["checkout","Check-out"],["maxGaeste","Max. Gäste"],["kontakt","Vermieter / Kontakt"],["telefon","Telefon"],["email","E-Mail"],["anfahrt","Anfahrt / Zugang"],["notizen","Notizen"],["beschreibung","Beschreibung"]];
 
 /* ================= Rendering ================= */
 function render(){
@@ -807,7 +825,7 @@ function tripDialog(t){
   openDlg(isNew?"Neue Ferien":"Ferien bearbeiten",`
     <div class="fl"><span>Homepage(s) der Unterkunft</span>
       <textarea class="inp" name="links" rows="2" placeholder="https://… (eine Adresse pro Zeile)">${esc((cur.links||[]).join("\n"))}</textarea>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><button type="button" class="btn ghost sm" id="fetchInfo">↓ Infos von Homepage holen</button><span class="hint" id="fetchMsg"></span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><button type="button" class="btn ghost sm" id="fetchInfo">↓ Infos von Homepage holen</button><button type="button" class="btn ghost sm" id="clearInfo">Infos löschen</button><span class="hint" id="fetchMsg"></span></div>
     </div>
     <label class="fl"><span>Name</span><input name="name" required value="${esc(cur.name)}" placeholder="z.B. Chalet Engadin"></label>
     <label class="fl"><span>Ort / Unterkunft</span><input name="ort" value="${esc(cur.ort||"")}" placeholder="z.B. Pontresina"></label>
@@ -817,7 +835,7 @@ function tripDialog(t){
       <div><button type="button" class="btn ghost sm" id="rAdd">＋ Zimmer</button></div>
     </div>
     <details class="fl infofs" ${Object.values(inf).some(Boolean)?"":""}><summary>Unterkunft-Infos (Adresse, Kontakt, Check-in …)</summary>
-      <div class="infogrid">${INFO_FIELDS.map(([k,l])=>`<label class="fl ${area(k)?"wide":""}"><span>${l}</span>${area(k)?`<textarea class="inp" name="i_${k}" rows="${k==="beschreibung"?4:2}">${esc(inf[k]||"")}</textarea>`:`<input class="inp" name="i_${k}" value="${esc(inf[k]||"")}">`}</label>`).join("")}</div>
+      <div class="infogrid">${INFO_FIELDS.map(([k,l])=>`<label class="fl ${area(k)?"wide":""}"><span>${l}</span>${area(k)?`<textarea class="inp" name="i_${k}" rows="${k==="beschreibung"?4:2}">${esc(inf[k]||"")}</textarea>`:`<input class="inp" name="i_${k}" value="${esc(inf[k]||"")}" ${k==="koordinaten"?'placeholder="z.B. 46.9312, 8.3456 oder Google-Maps-Link"':""}>`}${k==="koordinaten"?'<small class="hint" id="coordMsg">In Google Maps lange auf den Ort drücken bzw. Rechtsklick › Koordinaten kopieren, oder den Link teilen.</small>':""}</label>`).join("")}</div>
     </details>`,{
     onSave(){
       const name=F("name").value.trim(), s=F("start").value, e=F("end").value;
@@ -844,6 +862,15 @@ function tripDialog(t){
     if(t&&t.stays.some(s=>s.roomId===r.id)&&!confirm(`In «${r.name}» sind Personen eingetragen. Trotzdem entfernen? Sie werden «ohne Zimmer» geführt.`))return;
     rooms.splice(+b.dataset.rd,1);box.innerHTML=roomRows()};
   F("start").onchange=()=>{if(F("end").value<=F("start").value)F("end").value=addDays(F("start").value,7)};
+  const coordChk=()=>{const v=F("i_koordinaten").value.trim(),c=parseCoords(v),u=pinUrl(v),m=$("coordMsg");
+    if(!v){m.classList.remove("err");m.innerHTML="In Google Maps lange auf den Ort drücken bzw. Rechtsklick › Koordinaten kopieren, oder den Link teilen.";return}
+    m.classList.toggle("err",!u);m.innerHTML=c?`✓ ${c[0].toFixed(5)}, ${c[1].toFixed(5)} – <a href="${u}" target="_blank" rel="noopener">auf Karte prüfen</a>`:u?`Link wird direkt geöffnet (keine Koordinaten erkannt; Kurzlinks wie maps.app.goo.gl enthalten keine) – <a href="${esc(u)}" target="_blank" rel="noopener">testen</a>`:"Keine Koordinaten erkannt"};
+  F("i_koordinaten").addEventListener("input",coordChk); coordChk();
+  $("clearInfo").onclick=()=>{
+    if(!confirm("Alle Unterkunft-Infos und Homepages in diesem Formular leeren? (Wird erst mit «Speichern» übernommen.)"))return;
+    F("links").value=""; for(const[k]of INFO_FIELDS){const el=F("i_"+k);el.value="";el.classList.remove("fresh")} coordChk();
+    $("fetchMsg").classList.remove("err"); $("fetchMsg").textContent="Infos geleert – mit «Speichern» übernehmen.";
+  };
   $("fetchInfo").onclick=async()=>{
     const urls=F("links").value.split(/[\s,]+/).map(x=>x.trim()).filter(Boolean).map(x=>/^https?:\/\//i.test(x)?x:"https://"+x);
     if(!urls.length){$("fetchMsg").textContent="Bitte zuerst eine Homepage eingeben.";return}
@@ -860,7 +887,7 @@ function tripDialog(t){
         put("i_"+k,o[k],l);
       }
     }
-    if(filled.length)form.querySelector(".infofs").open=true;
+    if(filled.length)form.querySelector(".infofs").open=true; coordChk();
     const uniq=[...new Set(filled)];
     $("fetchMsg").textContent=(uniq.length?`Eingetragen: ${uniq.join(", ")}. Bitte prüfen.`:ok.length?"Keine neuen Infos gefunden (bereits ausgefüllte Felder werden nicht überschrieben).":"")+(bad.length?` Nicht lesbar: ${bad.map(host).join(", ")}.`:"");
     $("fetchMsg").classList.toggle("err",!ok.length);
