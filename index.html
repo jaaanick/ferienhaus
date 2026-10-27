@@ -463,7 +463,8 @@ details.more .hint{text-align:center}
 .db details.more>summary{padding-left:0;font-size:.8rem}
 
 /* Wichtige Infos & Hausregeln */
-.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.rgrid{columns:3 280px;column-gap:12px}
+.rgrid .rtile{break-inside:avoid;margin-bottom:12px;display:inline-block;width:100%}
 .rtile{background:var(--page);border-radius:18px;padding:20px 22px}
 .rtile h4{margin:0 0 8px;font-size:1.05rem;font-weight:600;letter-spacing:-.01em}
 .rtile ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px;font-size:.95rem;line-height:1.45}
