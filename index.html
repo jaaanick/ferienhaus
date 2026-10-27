@@ -6,31 +6,31 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ferienhaus">
-<meta name="theme-color" content="#f3f4f5">
+<meta name="theme-color" content="#ffffff">
 <title>Ferienhaus-Planer</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 15 16 5l12 10v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z' fill='%23dbe8f4' stroke='%232c5a85' stroke-width='2' stroke-linejoin='round'/%3E%3Crect x='13' y='19' width='6' height='10' fill='%232c5a85'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <style>
 :root{
-  --bg:#f3f4f5; --surface:#ffffff; --ink:#1c2024; --muted:#646d76; --line:#d9dde1; --accent:#2c5a85; --accent-ink:#ffffff;
-  --neg-bg:#ffc7ce; --neg-ink:#9c0006;
-  --pos-bg:#e3f3e6; --pos-ink:#2f6b3c;
-  --we-bg:#f6f7f8; --shadow:rgba(20,30,40,.18);
-  --pb-s:70%; --pb-l:87%; --pi-s:55%; --pi-l:24%; --pl-s:45%; --pl-l:60%;
-  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
-  --f-body:"Archivo","Helvetica Neue",Arial,sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --page:#ffffff; --bg:#f5f5f7; --surface:#ffffff; --ink:#1d1d1f; --muted:#6e6e73; --line:#e8e8ed; --accent:#0066cc; --accent-ink:#ffffff;
+  --neg-bg:#fcebed; --neg-ink:#b0414b;
+  --pos-bg:#e8f5ed; --pos-ink:#2f7650;
+  --we-bg:#fafafc; --shadow:rgba(0,0,0,.08);
+  --pb-s:60%; --pb-l:93%; --pi-s:30%; --pi-l:32%; --pl-s:45%; --pl-l:84%;
+  --f-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Helvetica Neue",Arial,sans-serif;
+  --f-body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Helvetica Neue",Arial,sans-serif;
+  --f-mono:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Helvetica Neue",Arial,sans-serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#15181b; --surface:#1e2226; --ink:#e7eaed; --muted:#9aa3ab; --line:#30363c; --accent:#7fb0de; --accent-ink:#0e1a26;
-  --neg-bg:#5a1c22; --neg-ink:#ffb3bc; --pos-bg:#1d3223; --pos-ink:#9fd6ab; --we-bg:#1a1e21; --shadow:rgba(0,0,0,.5);
-  --pb-s:30%; --pb-l:28%; --pi-s:70%; --pi-l:86%; --pl-s:35%; --pl-l:45%; color-scheme:dark}}
+  --page:#000000; --bg:#1c1c1e; --surface:#111113; --ink:#f5f5f7; --muted:#a1a1a6; --line:#2c2c2e; --accent:#64a8ff; --accent-ink:#0b1a2b;
+  --neg-bg:#3a2226; --neg-ink:#f2a9b0; --pos-bg:#1d3326; --pos-ink:#9fd8b4; --we-bg:#151517; --shadow:rgba(0,0,0,.6);
+  --pb-s:25%; --pb-l:24%; --pi-s:45%; --pi-l:86%; --pl-s:25%; --pl-l:34%; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#15181b; --surface:#1e2226; --ink:#e7eaed; --muted:#9aa3ab; --line:#30363c; --accent:#7fb0de; --accent-ink:#0e1a26;
-  --neg-bg:#5a1c22; --neg-ink:#ffb3bc; --pos-bg:#1d3223; --pos-ink:#9fd6ab; --we-bg:#1a1e21; --shadow:rgba(0,0,0,.5);
-  --pb-s:30%; --pb-l:28%; --pi-s:70%; --pi-l:86%; --pl-s:35%; --pl-l:45%; color-scheme:dark}
+  --page:#000000; --bg:#1c1c1e; --surface:#111113; --ink:#f5f5f7; --muted:#a1a1a6; --line:#2c2c2e; --accent:#64a8ff; --accent-ink:#0b1a2b;
+  --neg-bg:#3a2226; --neg-ink:#f2a9b0; --pos-bg:#1d3326; --pos-ink:#9fd8b4; --we-bg:#151517; --shadow:rgba(0,0,0,.6);
+  --pb-s:25%; --pb-l:24%; --pi-s:45%; --pi-l:86%; --pl-s:25%; --pl-l:34%; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -236,6 +236,104 @@ dialog form{display:flex;flex-direction:column;max-height:calc(100dvh - 26px)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 10px;font-size:.8rem;font-weight:600}
 .chip:hover{border-color:var(--ink)}
+
+/* ===== Apple-ähnliches Erscheinungsbild: viel Weiss, ruhige Typografie, Pastell ===== */
+body{background:var(--page);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-feature-settings:"tnum" 0}
+.wrap{max-width:1120px;padding-block:44px 72px;gap:44px}
+header{align-items:flex-start}
+h1{font-size:clamp(2.1rem,4.6vw,3.2rem);font-weight:700;letter-spacing:-.025em;line-height:1.08}
+.sub{font-size:1.1rem;margin-top:8px;color:var(--muted)}
+.infobar{margin-top:-28px;gap:12px}
+.iis{gap:8px}
+.ii{border:0;background:var(--bg);border-radius:999px;padding:7px 14px;font-size:.86rem}
+a.ii:hover{background:#ebebf0;color:var(--ink)}
+.imore summary{color:var(--accent);font-weight:500;font-size:.88rem}
+.imore p,.box p,.box ol,.hint{max-width:none}
+.imore{background:var(--bg);border-radius:18px;padding:14px 18px}
+.imore[open]{display:flex;flex-direction:column;gap:12px}
+.imore h3{margin:0 0 4px}
+.tripsel select{border:0;background:var(--bg);border-radius:999px;padding:9px 16px;font-weight:500}
+.icon{border:0;background:var(--bg);border-radius:999px;min-width:40px;height:40px}
+.icon:hover{background:#ebebf0}
+.bar{margin-top:-20px}
+.jump a{border:0;background:transparent;color:var(--accent);font-weight:500;font-size:.92rem;padding:4px 10px}
+.jump a:hover{color:var(--ink);background:var(--bg)}
+.stats{border:0;background:transparent;gap:14px;overflow:visible}
+.stat,.stat:nth-child(n){background:var(--bg);border:0!important;border-radius:20px;padding:20px 22px;gap:6px}
+.stat .k{text-transform:none;letter-spacing:0;font-size:.84rem;font-weight:500}
+.stat .v{font-size:1.85rem;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat .v small{font-size:.84rem}
+.stat.over{background:var(--neg-bg)}
+@media (max-width:680px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat .v{font-size:1.45rem}}
+.section{gap:16px;scroll-margin-top:20px}
+.shead{align-items:center}
+.shead h2{font-size:clamp(1.6rem,3vw,2.1rem);font-weight:700;letter-spacing:-.02em}
+.hint{font-size:.9rem;line-height:1.55}
+h3{text-transform:none;letter-spacing:0;font-size:.95rem;color:var(--ink);font-weight:600}
+.btn{border:0;background:var(--ink);color:#fff;border-radius:999px;padding:9px 18px;font-weight:500;font-size:.9rem}
+.btn:hover{background:#3a3a3c}
+.btn.ghost{background:var(--bg);color:var(--ink)}
+.btn.ghost:hover{background:#ebebf0}
+.btn.danger{background:var(--neg-bg);color:var(--neg-ink)}
+.btn.sm{padding:6px 14px;font-size:.84rem}
+.linkbtn{text-decoration:none;font-size:.86rem;font-weight:500}
+.plan,.tablewrap,.transfers,.box{border:1px solid var(--line);border-radius:20px;background:var(--surface)}
+.box{padding:18px 20px}
+.box.auth{border-color:var(--line)}
+th,td{padding:13px 16px;border-bottom:1px solid var(--line)}
+th{text-transform:none;letter-spacing:0;font-size:.8rem;font-weight:500}
+tfoot td{border-top:1px solid #d2d2d7}
+td.num,th.num{font-variant-numeric:tabular-nums}
+td .meta{font-size:.8rem;margin-top:2px}
+body:not(.ro) tr.click:hover td{background:#fafafc}
+.pill{border:0;background:var(--bg);font-weight:500;padding:2px 9px}
+.pill.warn{background:var(--neg-bg);color:var(--neg-ink)}
+.tr{padding:15px 18px}
+.okbox{border:0;border-radius:20px;padding:16px 20px;font-weight:500}
+.ph{font-size:.68rem;letter-spacing:.02em}
+.ph b{font-size:.92rem;font-weight:600}
+.corner,.rl{background:var(--surface)}
+.rl b{font-size:.9rem}
+.stay{border-radius:999px;margin:6px 3px;padding:0 12px;font-weight:500;font-size:.82rem}
+.dragbar{border-radius:999px;margin:6px 3px}
+.foot{font-size:.78rem}
+.box.tarif{border:0;background:var(--bg)}
+.box.tarif summary{padding:14px 20px}
+.box.tarif>*:not(summary){margin-inline:20px}
+.box.tarif input,.box.tarif select{background:var(--surface);border-color:transparent;border-radius:10px;font-family:var(--f-body)}
+.gate{border:0;background:var(--bg);border-radius:24px;box-shadow:none;padding:28px}
+.gate .inp{background:var(--surface)}
+.tcard{border:0;background:var(--surface);border-radius:14px}
+.hero{border:0;background:var(--bg);border-radius:24px}
+.viewnote{border-top:0}
+dialog{border:0;border-radius:22px;box-shadow:0 30px 80px rgba(0,0,0,.18)}
+dialog::backdrop{background:rgba(0,0,0,.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.dh{border-bottom:0;padding:20px 22px 6px}
+.dh h2{font-size:1.35rem;font-weight:700;letter-spacing:-.015em}
+.db{padding:12px 22px 18px;gap:16px}
+.df{border-top:1px solid var(--line);padding:14px 22px}
+.fl>span{text-transform:none;letter-spacing:0;font-size:.82rem;font-weight:500;color:var(--muted)}
+.fl input,.fl select,.inp,textarea.inp{border:1px solid transparent;background:var(--bg);border-radius:12px;padding:10px 12px}
+.fl input:focus,.fl select:focus,.inp:focus{outline:none;border-color:#b9d4f5;background:var(--surface)}
+.seg{border:0;background:var(--bg);border-radius:12px;padding:3px}
+.seg label{border-radius:9px;font-weight:500}
+.seg label:has(input:checked){background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.plist{border-color:var(--line);border-radius:14px}
+.prow input[type=number]{border-color:transparent;background:var(--bg);border-radius:8px}
+.chip{border:0;background:var(--bg);font-weight:500;padding:6px 14px}
+.chip:hover{background:#ebebf0}
+.infofs summary{text-transform:none;letter-spacing:0;font-size:.88rem;color:var(--accent);font-weight:500}
+.rentbox{background:var(--bg);border-radius:16px;padding:14px 16px;gap:10px}
+.rentbox>span{color:var(--ink);font-weight:600;font-size:.95rem}
+.rentbox .inp{background:var(--surface)}
+.rentrow{display:grid;grid-template-columns:1fr 1.3fr;gap:8px}
+.inp.fresh{border-color:#bfe3cc}
+footer{justify-content:center}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn{background:#f5f5f7;color:#1d1d1f}
+  :root:not([data-theme="light"]) .btn.ghost,:root:not([data-theme="light"]) .chip,:root:not([data-theme="light"]) .icon{background:var(--bg);color:var(--ink)}
+  :root:not([data-theme="light"]) a.ii:hover,:root:not([data-theme="light"]) .icon:hover,:root:not([data-theme="light"]) .btn.ghost:hover{background:#2c2c2e}
+  :root:not([data-theme="light"]) body:not(.ro) tr.click:hover td{background:#18181a}}
+@media (max-width:620px){.wrap{gap:34px;padding-block:28px 56px}.infobar{margin-top:-20px}.rentrow{grid-template-columns:1fr}}
 </style>
 </head>
 <body class="ro">
@@ -427,7 +525,8 @@ function personFee(t,p){
   if(d&&toRp(f.dogFlat)>0){o.dog+=toRp(f.dogFlat)*d;o.txt.push(`Hund ${d>1?d+" × ":""}pauschal ${chf(toRp(f.dogFlat))}`)}
   o.total=o.kid+o.dog; return o;
 }
-const rentCost=t=>t.costs.find(c=>c.cat==="unterkunft")||null;
+const RENT_UNITS={nacht:"pro Nacht",woche:"pro Woche",total:"pauschal",staffel:"Staffelpreis pro Nacht"};
+const rentCost=t=>t.costs.find(c=>c.rent)||t.costs.find(c=>c.cat==="unterkunft"&&RENT_UNITS[c.unit])||t.costs.find(c=>c.cat==="unterkunft")||null;
 const feePayer=t=>(t.fees||{}).paidBy||(rentCost(t)||{}).paidBy||"";
 function ledger(t){
   const L={}; for(const p of t.people)L[p.id]={paid:0,owed:0,sent:0,recv:0,fee:0,nights:personNights(t,p.id).size};
@@ -719,10 +818,6 @@ function secCosts(t){
   return `<section class="section" id="sKosten">
     <div class="shead"><h2>Kosten</h2><div class="tools edit"><button class="btn sm" id="addCost">＋ Kosten</button></div></div>
     <div class="chips edit" id="presets">
-      <button class="chip" data-pre="miete_n">Miete pro Nacht</button>
-      <button class="chip" data-pre="miete_w">Miete pro Woche</button>
-      <button class="chip" data-pre="miete_t">Miete pauschal</button>
-      <button class="chip" data-pre="miete_s">Miete Staffelpreis</button>
 
       <button class="chip" data-pre="reinigung">Schlussreinigung</button>
       <button class="chip" data-pre="kurtaxe">Kurtaxe</button>
@@ -853,10 +948,18 @@ function tripDialog(t){
   const isNew=!t;
   const today=isoToday();
   const cur=t||{name:"",ort:"",start:addDays(today,30),end:addDays(today,37),rooms:[{id:uid(),name:"Zimmer 1",beds:2},{id:uid(),name:"Zimmer 2",beds:2}]};
+  const rc0=t?rentCost(t):null;
   const inf=cur.info||{}, area=k=>k==="anfahrt"||k==="notizen"||k==="beschreibung";
   let rooms=cur.rooms.map(r=>({...r}));
   const roomRows=()=>rooms.map((r,i)=>`<div class="room"><input class="inp" data-rn="${i}" value="${esc(r.name)}" placeholder="Zimmername" aria-label="Zimmername"><input class="inp" data-rb="${i}" type="number" min="0" max="20" value="${r.beds}" aria-label="Schlafplätze" title="Schlafplätze"><button type="button" class="icon" data-rd="${i}" aria-label="Zimmer entfernen">−</button></div>`).join("");
   openDlg(isNew?"Neue Ferien":"Ferien bearbeiten",`
+    <div class="fl rentbox"><span>Miete</span>
+      <div class="rentrow"><input class="inp" name="rAmt" inputmode="decimal" placeholder="Betrag CHF" value="${esc(rc0?.amount??"")}" aria-label="Mietbetrag CHF">
+        <select class="inp" name="rUnit" aria-label="Mietpreisart">${Object.entries(RENT_UNITS).map(([k,v])=>`<option value="${k}" ${k===(rc0&&RENT_UNITS[rc0.unit]?rc0.unit:"nacht")?"selected":""}>${v}</option>`).join("")}</select></div>
+      <div class="row" id="rStf"><label class="fl"><span>Inkl. Personen</span><input class="inp" name="rIncl" type="number" min="0" max="50" value="${rc0?.incl??2}"></label><label class="fl"><span>+ pro weitere Person / Nacht</span><input class="inp" name="rExtra" inputmode="decimal" value="${esc(rc0?.extra??"")}" placeholder="0.00"></label></div>
+      ${!isNew&&t.people.length?`<label class="fl"><span>Bezahlt von</span><select class="inp" name="rPaid"><option value="">– noch offen –</option>${t.people.map(p=>`<option value="${p.id}" ${rc0&&p.id===rc0.paidBy?"selected":""}>${esc(p.name)}</option>`).join("")}</select></label>`:""}
+      <small class="hint" id="rHint"></small>
+    </div>
     <div class="fl"><span>Homepage(s) der Unterkunft</span>
       <textarea class="inp" name="links" rows="2" placeholder="https://… (eine Adresse pro Zeile)">${esc((cur.links||[]).join("\n"))}</textarea>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><button type="button" class="btn ghost sm" id="fetchInfo">↓ Infos von Homepage holen</button><button type="button" class="btn ghost sm" id="clearInfo">Infos löschen</button><span class="hint" id="fetchMsg"></span></div>
@@ -875,6 +978,8 @@ function tripDialog(t){
       const name=F("name").value.trim(), s=F("start").value, e=F("end").value;
       if(!name)return fail("Bitte einen Namen eingeben.");
       if(!s||!e||e<=s)return fail("Die Abreise muss nach der Anreise liegen.");
+      const rAmt=F("rAmt").value.trim().replace(",",".").replace(/['’\s]/g,""), rUnit=F("rUnit").value;
+      if(rAmt&&!(toRp(rAmt)>0))return fail("Mietbetrag ungültig.");
       sync(); rooms=rooms.filter(r=>r.name.trim()||r.beds>0).map(r=>({id:r.id,name:r.name.trim()||"Zimmer",beds:Math.max(0,parseInt(r.beds)||0)}));
       const info={};for(const[k]of INFO_FIELDS){const v=F("i_"+k).value.trim();if(v)info[k]=v}
       const links=F("links").value.split(/[\s,]+/).map(x=>x.trim()).filter(x=>/^https?:\/\//i.test(x));
@@ -885,6 +990,11 @@ function tripDialog(t){
         for(const st of t.stays)if(st.roomId&&!kept.has(st.roomId))st.roomId="";
         Object.assign(t,{name,ort:F("ort").value.trim(),start:s,end:e,rooms,info,links});
       }
+      { const tr=T(), rc=rentCost(tr);
+        if(rAmt){const x={amount:rAmt,unit:rUnit,rent:true,...(rUnit==="staffel"?{incl:Math.max(0,parseInt(F("rIncl").value)||0),extra:F("rExtra").value.trim().replace(",",".")}:{}),...(F("rPaid")?{paidBy:F("rPaid").value}:{})};
+          if(rc){if(rUnit!=="staffel"){delete rc.incl;delete rc.extra}Object.assign(rc,x,{cat:"unterkunft"})}
+          else tr.costs.unshift({id:uid(),title:"Miete",cat:"unterkunft",mode:"naechte",who:[],pct:{},paidBy:"",date:"",from:"",to:"",...x});}
+        else if(rc&&rc.rent)tr.costs=tr.costs.filter(c=>c!==rc); }
       commit();
     },
     onDelete:isNew?null:()=>{if(!confirm(`«${t.name}» mit allen Personen und Kosten endgültig löschen? Der Link funktioniert danach nicht mehr.`))return false;deleteTrip(t)},
@@ -896,7 +1006,11 @@ function tripDialog(t){
   box.onclick=e=>{const b=e.target.closest("[data-rd]");if(!b)return;sync();const r=rooms[+b.dataset.rd];
     if(t&&t.stays.some(s=>s.roomId===r.id)&&!confirm(`In «${r.name}» sind Personen eingetragen. Trotzdem entfernen? Sie werden «ohne Zimmer» geführt.`))return;
     rooms.splice(+b.dataset.rd,1);box.innerHTML=roomRows()};
-  F("start").onchange=()=>{if(F("end").value<=F("start").value)F("end").value=addDays(F("start").value,7)};
+  F("start").onchange=()=>{if(F("end").value<=F("start").value)F("end").value=addDays(F("start").value,7);rUpd()};
+  const rUpd=()=>{const u=F("rUnit").value, a=toRp(F("rAmt").value.replace(",",".")), n=Math.max(0,diff(F("start").value,F("end").value));
+    $("rStf").hidden=u!=="staffel";
+    $("rHint").textContent=!a?"Leer lassen, wenn noch kein Preis bekannt ist.":u==="nacht"?`${n} Nächte × ${chf(a)} = CHF ${chf(a*n)}`:u==="woche"?`${n} Nächte = ${(n/7).toFixed(2).replace(/\.?0+$/,"")} Wochen → CHF ${chf(Math.round(a*n/7))}`:u==="total"?`CHF ${chf(a)} für den ganzen Aufenthalt`:`Grundpreis ${chf(a)}/Nacht für ${F("rIncl").value||0} Pers.; Betrag hängt von der Belegung ab (Kinder über Zuschläge).`};
+  ["rAmt","rUnit","rIncl","rExtra","end"].forEach(n=>F(n).addEventListener("input",rUpd)); F("rUnit").addEventListener("change",rUpd); rUpd();
   const coordChk=()=>{for(const k of ["koordinaten","parkplatz"]){const v=F("i_"+k).value.trim(),c=parseCoords(v),u=pinUrl(v),m=$("coordMsg_"+k);
     if(!v){m.classList.remove("err");m.innerHTML="In Google Maps lange auf den Ort drücken bzw. Rechtsklick › Koordinaten kopieren, oder den Link teilen.";continue}
     m.classList.toggle("err",!u);m.innerHTML=c?`✓ ${c[0].toFixed(5)}, ${c[1].toFixed(5)} – <a href="${u}" target="_blank" rel="noopener">auf Karte prüfen</a>`:u?`Link wird direkt geöffnet (keine Koordinaten erkannt) – <a href="${esc(u)}" target="_blank" rel="noopener">testen</a>`:"Keine Koordinaten erkannt"}};
