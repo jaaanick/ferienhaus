@@ -359,16 +359,16 @@ a{color:var(--link)}
 @media (max-width:760px){.gin{gap:8px}.brand span{display:none}.gnav .jump{justify-content:flex-start}.gnav .tripsel select{max-width:120px}}
 /* Bühne */
 .wrap{max-width:1024px;padding-block:0 0;gap:0}
-.hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:0;padding:64px 0 52px;background:var(--tile);box-shadow:0 0 0 100vmax var(--tile);clip-path:inset(0 -100vmax)}
-.hero h1{font-size:clamp(2.5rem,6vw,3.5rem);font-weight:600;letter-spacing:-.005em;line-height:1.07}
-.hero .sub{font-size:clamp(1.2rem,2.4vw,1.75rem);font-weight:400;color:var(--ink);letter-spacing:.007em;line-height:1.15;margin-top:6px}
+.stage{display:flex;flex-direction:column;align-items:center;text-align:center;gap:0;padding:64px 0 52px;background:var(--tile);box-shadow:0 0 0 100vmax var(--tile);clip-path:inset(0 -100vmax)}
+.stage h1{color:var(--ink);font-size:clamp(2.5rem,6vw,3.5rem);font-weight:600;letter-spacing:-.005em;line-height:1.07}
+.stage .sub{font-size:clamp(1.2rem,2.4vw,1.75rem);font-weight:400;color:var(--ink);letter-spacing:.007em;line-height:1.15;margin-top:6px}
 .cta{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:22px}
 .cta .btn{font-size:17px;padding:11px 22px}
-.hero .infobar{margin-top:28px;align-items:center;width:100%}
-.hero .iis{justify-content:center}
-.hero .ii{background:var(--page)}
-.hero .imore{background:var(--page);text-align:left;width:100%;max-width:760px}
-.hero .status{margin-top:18px;font-size:12px}
+.stage .infobar{margin-top:28px;align-items:center;width:100%}
+.stage .iis{justify-content:center}
+.stage .ii{background:var(--page)}
+.stage .imore{background:var(--page);text-align:left;width:100%;max-width:760px}
+.stage .status{margin-top:18px;font-size:12px}
 /* Kennzahlen */
 .hstats{margin:40px 0 0;gap:12px}
 .hstats .stat{background:var(--tile);border-radius:18px;padding:22px 24px;align-items:center;text-align:center}
@@ -416,7 +416,7 @@ th{font-size:12px;color:var(--muted)}
   :root:not([data-theme="light"]) .btn{background:var(--blue);color:#fff}
   :root:not([data-theme="light"]) .btn.ghost{background:transparent;color:var(--link)}
   :root:not([data-theme="light"]) .gnav .icon:hover,:root:not([data-theme="light"]) .gnav .tripsel select{background-color:rgba(255,255,255,.08)}}
-@media (max-width:620px){.hero{padding:44px 0 40px}.section{padding:52px 0 56px}.hstats{margin-top:28px}.hstats .stat .v{font-size:1.6rem}}
+@media (max-width:620px){.stage{padding:44px 0 40px}.section{padding:52px 0 56px}.hstats{margin-top:28px}.hstats .stat .v{font-size:1.6rem}}
 </style>
 </head>
 <body class="ro">
@@ -435,7 +435,7 @@ th{font-size:12px;color:var(--muted)}
   </div>
 </nav>
 <div class="wrap" id="top">
-  <header class="hero">
+  <header class="stage">
     <h1 id="title">Ferienhaus-Planer</h1>
     <div class="sub" id="subtitle">Zimmer, Belegung und Kosten fair aufteilen</div>
     <div class="cta" id="heroCta" hidden>
