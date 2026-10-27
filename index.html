@@ -491,7 +491,7 @@ const telHref=x=>"tel:"+String(x).replace(/[^\d+]/g,"");
 function renderInfo(t){
   const i=t.info||{}, links=(t.links||[]).filter(Boolean), it=[];
   if(i.adresse)it.push(`<a class="ii" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.adresse)}" target="_blank" rel="noopener"><b>📍</b>${esc(i.adresse)}</a>`);
-  if(i.koordinaten&&pinUrl(i.koordinaten)){const c=parseCoords(i.koordinaten);it.push(`<a class="ii" href="${esc(pinUrl(i.koordinaten))}" target="_blank" rel="noopener"><b>📌</b>${c?`${c[0].toFixed(5)}, ${c[1].toFixed(5)}`:"Stecknadel"}</a>`)}
+  for(const[k,ico,lbl]of [["koordinaten","🏠","Haus"],["parkplatz","🅿️","PP"]])if(i[k]&&pinUrl(i[k]))it.push(`<a class="ii pin" href="${esc(pinUrl(i[k]))}" target="_blank" rel="noopener" title="${lbl==="PP"?"Parkplatz":"Haus"} in Google Maps öffnen"><b>${ico}</b>${lbl} 📌</a>`);
   if(i.checkin||i.checkout)it.push(`<span class="ii"><b>🕑</b>${i.checkin?`Check-in ${esc(i.checkin)}`:""}${i.checkin&&i.checkout?" · ":""}${i.checkout?`Check-out ${esc(i.checkout)}`:""}</span>`);
   if(i.maxGaeste)it.push(`<span class="ii"><b>👥</b>max. ${esc(i.maxGaeste)} Gäste</span>`);
   if(i.kontakt)it.push(`<span class="ii"><b>👤</b>${esc(i.kontakt)}</span>`);
@@ -550,7 +550,7 @@ function extractInfo(raw){
   return o;
   function norm(x){x=String(x).replace(".",":");return /:/.test(x)?x.padStart(5,"0"):x.padStart(2,"0")+":00"}
 }
-const INFO_FIELDS=[["adresse","Adresse"],["koordinaten","Koordinaten / Google-Maps-Link"],["checkin","Check-in"],["checkout","Check-out"],["maxGaeste","Max. Gäste"],["kontakt","Vermieter / Kontakt"],["telefon","Telefon"],["email","E-Mail"],["anfahrt","Anfahrt / Zugang"],["notizen","Notizen"],["beschreibung","Beschreibung"]];
+const INFO_FIELDS=[["adresse","Adresse"],["koordinaten","🏠 Haus – Koordinaten / Maps-Link"],["parkplatz","🅿️ Parkplatz – Koordinaten / Maps-Link"],["checkin","Check-in"],["checkout","Check-out"],["maxGaeste","Max. Gäste"],["kontakt","Vermieter / Kontakt"],["telefon","Telefon"],["email","E-Mail"],["anfahrt","Anfahrt / Zugang"],["notizen","Notizen"],["beschreibung","Beschreibung"]];
 
 /* ================= Rendering ================= */
 function render(){
@@ -835,7 +835,7 @@ function tripDialog(t){
       <div><button type="button" class="btn ghost sm" id="rAdd">＋ Zimmer</button></div>
     </div>
     <details class="fl infofs" ${Object.values(inf).some(Boolean)?"":""}><summary>Unterkunft-Infos (Adresse, Kontakt, Check-in …)</summary>
-      <div class="infogrid">${INFO_FIELDS.map(([k,l])=>`<label class="fl ${area(k)?"wide":""}"><span>${l}</span>${area(k)?`<textarea class="inp" name="i_${k}" rows="${k==="beschreibung"?4:2}">${esc(inf[k]||"")}</textarea>`:`<input class="inp" name="i_${k}" value="${esc(inf[k]||"")}" ${k==="koordinaten"?'placeholder="z.B. 46.9312, 8.3456 oder Google-Maps-Link"':""}>`}${k==="koordinaten"?'<small class="hint" id="coordMsg">In Google Maps lange auf den Ort drücken bzw. Rechtsklick › Koordinaten kopieren, oder den Link teilen.</small>':""}</label>`).join("")}</div>
+      <div class="infogrid">${INFO_FIELDS.map(([k,l])=>`<label class="fl ${area(k)?"wide":""}"><span>${l}</span>${area(k)?`<textarea class="inp" name="i_${k}" rows="${k==="beschreibung"?4:2}">${esc(inf[k]||"")}</textarea>`:`<input class="inp" name="i_${k}" value="${esc(inf[k]||"")}" ${k==="koordinaten"||k==="parkplatz"?'placeholder="z.B. 46.9312, 8.3456 oder Google-Maps-Link"':""}>`}${k==="koordinaten"||k==="parkplatz"?`<small class="hint" id="coordMsg_${k}"></small>`:""}</label>`).join("")}</div>
     </details>`,{
     onSave(){
       const name=F("name").value.trim(), s=F("start").value, e=F("end").value;
@@ -862,10 +862,10 @@ function tripDialog(t){
     if(t&&t.stays.some(s=>s.roomId===r.id)&&!confirm(`In «${r.name}» sind Personen eingetragen. Trotzdem entfernen? Sie werden «ohne Zimmer» geführt.`))return;
     rooms.splice(+b.dataset.rd,1);box.innerHTML=roomRows()};
   F("start").onchange=()=>{if(F("end").value<=F("start").value)F("end").value=addDays(F("start").value,7)};
-  const coordChk=()=>{const v=F("i_koordinaten").value.trim(),c=parseCoords(v),u=pinUrl(v),m=$("coordMsg");
-    if(!v){m.classList.remove("err");m.innerHTML="In Google Maps lange auf den Ort drücken bzw. Rechtsklick › Koordinaten kopieren, oder den Link teilen.";return}
-    m.classList.toggle("err",!u);m.innerHTML=c?`✓ ${c[0].toFixed(5)}, ${c[1].toFixed(5)} – <a href="${u}" target="_blank" rel="noopener">auf Karte prüfen</a>`:u?`Link wird direkt geöffnet (keine Koordinaten erkannt; Kurzlinks wie maps.app.goo.gl enthalten keine) – <a href="${esc(u)}" target="_blank" rel="noopener">testen</a>`:"Keine Koordinaten erkannt"};
-  F("i_koordinaten").addEventListener("input",coordChk); coordChk();
+  const coordChk=()=>{for(const k of ["koordinaten","parkplatz"]){const v=F("i_"+k).value.trim(),c=parseCoords(v),u=pinUrl(v),m=$("coordMsg_"+k);
+    if(!v){m.classList.remove("err");m.innerHTML="In Google Maps lange auf den Ort drücken bzw. Rechtsklick › Koordinaten kopieren, oder den Link teilen.";continue}
+    m.classList.toggle("err",!u);m.innerHTML=c?`✓ ${c[0].toFixed(5)}, ${c[1].toFixed(5)} – <a href="${u}" target="_blank" rel="noopener">auf Karte prüfen</a>`:u?`Link wird direkt geöffnet (keine Koordinaten erkannt) – <a href="${esc(u)}" target="_blank" rel="noopener">testen</a>`:"Keine Koordinaten erkannt"}};
+  F("i_koordinaten").addEventListener("input",coordChk); F("i_parkplatz").addEventListener("input",coordChk); coordChk();
   $("clearInfo").onclick=()=>{
     if(!confirm("Alle Unterkunft-Infos und Homepages in diesem Formular leeren? (Wird erst mit «Speichern» übernommen.)"))return;
     F("links").value=""; for(const[k]of INFO_FIELDS){const el=F("i_"+k);el.value="";el.classList.remove("fresh")} coordChk();
