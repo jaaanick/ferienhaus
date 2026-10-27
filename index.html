@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ferienhaus">
 <meta name="theme-color" content="#ffffff">
-<title>Ferienhaus-Planer</title>
+<title>Der Ferienhauser</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 15 16 5l12 10v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z' fill='%23dbe8f4' stroke='%232c5a85' stroke-width='2' stroke-linejoin='round'/%3E%3Crect x='13' y='19' width='6' height='10' fill='%232c5a85'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -476,12 +476,28 @@ details.more .hint{text-align:center}
 /* Abstand zwischen Kennzahlen und nachfolgender grauer Fläche */
 .hstats{margin-bottom:56px}
 @media (max-width:620px){.hstats{margin-bottom:40px}}
+
+/* Logo: Haus + «-er» = Hauser */
+.logo{display:inline-flex;align-items:flex-end;gap:0;line-height:1}
+.logo svg{width:20px;height:20px}
+.logo .er{font-weight:600;font-size:13px;letter-spacing:-.02em;margin-left:1px;transform:translateY(-1px)}
+.brand{gap:9px}
+.brand .bname{font-weight:600}
+.brand .logo svg{width:20px;height:20px}
+@media (max-width:760px){.brand .bname{display:none}}
+/* Fusszeile mit Spruch */
+.gfoot{flex-direction:column;gap:14px;padding:44px 0 34px}
+.sign{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--ink)}
+.motto{font-size:1.15rem;font-weight:500;letter-spacing:-.01em;font-style:italic}
+.logo.big svg{width:34px;height:34px}
+.logo.big .er{font-size:20px;transform:translateY(-2px)}
+.fmeta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;font-size:12px;color:var(--muted)}
 </style>
 </head>
 <body class="ro">
 <nav class="gnav" aria-label="Navigation">
   <div class="gin">
-    <a class="brand" href="/ferienhaus/" aria-label="Ferienhaus-Planer Startseite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7v8.5a1 1 0 0 1-1 1h-5v-6h-5v6h-5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span>Ferienhaus</span></a>
+    <a class="brand" href="/ferienhaus/" aria-label="Der Ferienhauser – Startseite"><span class="logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7v8.5a1 1 0 0 1-1 1h-5v-6h-5v6h-5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span class="er">-er</span></span><span class="bname">Der Ferienhauser</span></a>
     <div class="jump" id="jump" hidden>
       <a href="#top" class="j-top">Übersicht</a><a href="#sInfo">Infos</a><a href="#sBelegung">Belegung</a><a href="#sPersonen">Personen</a><a href="#sKosten">Kosten</a><a href="#sAbrechnung">Abrechnung</a>
     </div>
@@ -495,7 +511,7 @@ details.more .hint{text-align:center}
 </nav>
 <div class="wrap" id="top">
   <header class="stage">
-    <h1 id="title">Ferienhaus-Planer</h1>
+    <h1 id="title">Der Ferienhauser</h1>
     <div class="sub" id="subtitle">Zimmer, Belegung und Kosten fair aufteilen</div>
     <div class="cta" id="heroCta" hidden>
       <button class="btn edit" type="button" id="ctaEdit">Ferien bearbeiten</button>
@@ -525,8 +541,8 @@ details.more .hint{text-align:center}
     <div class="toast" id="tokMsg" role="status"></div>
   </div>
   <footer class="gfoot">
-    <span id="who"></span>
-    <button class="linkbtn" id="tokClear" hidden>Token auf diesem Gerät entfernen</button>
+    <div class="sign"><span class="motto">Viel Spass mit Ferienhauser</span><span class="logo big"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7v8.5a1 1 0 0 1-1 1h-5v-6h-5v6h-5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span class="er">-er</span></span></div>
+    <div class="fmeta"><span id="who"></span><button class="linkbtn" id="tokClear" hidden>Token auf diesem Gerät entfernen</button></div>
   </footer>
 </div>
 
@@ -878,7 +894,7 @@ function render(){
   $("jump").hidden=!t; $("heroCta").hidden=!t||!token;
   if(!t){
     $("infobar").hidden=true;
-    $("title").textContent="Ferienhaus-Planer";$("subtitle").textContent="Zimmer, Belegung und Kosten fair aufteilen";
+    $("title").textContent="Der Ferienhauser";$("subtitle").textContent="Zimmer, Belegung und Kosten fair aufteilen";
     $("viewNote").hidden=true; $("auth").hidden=true;
     $("main").innerHTML=!loaded?"":`<div class="gate">
       <div class="gh"><span class="gi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></span><div><b>${notFound?"Link ungültig":"Bitte Link mit Code öffnen"}</b>

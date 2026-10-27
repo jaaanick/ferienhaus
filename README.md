@@ -1,6 +1,6 @@
 # ferienhaus
 
-Ferienhaus-Planer: Zimmerbelegung und Kostenaufteilung für gemeinsame Ferien.
+Der Ferienhauser (Ferienhaus-Planer): Zimmerbelegung und Kostenaufteilung für gemeinsame Ferien.
 
 - App: https://jaaanick.github.io/ferienhaus/ (GitHub Pages, `index.html`)
 - Jede Ferien hat einen eigenen geheimen Link: `https://jaaanick.github.io/ferienhaus/<Code>`
