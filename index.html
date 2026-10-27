@@ -517,12 +517,13 @@ function extractInfo(raw){
   const em=flat.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}/i); if(em&&!/(sentry|example|wixpress|\.png|\.jpg)/i.test(em[0]))o.email=em[0];
   const ph=flat.match(/(?:\+|00)(?:41|49|43|423|39|33)[\s\d()/.-]{8,16}\d/)||flat.match(/(?:tel(?:efon)?|phone|fon)[.:\s]*((?:0)\d{2}[\s\d/.-]{7,12}\d)/i);
   if(ph)o.telefon=(ph[1]||ph[0]).trim();
-  const ho=flat.match(/\b(?:[Hh]osted by|[Hh]ost|[Gg]astgeber(?:in)?|[Vv]ermieter(?:in)?|[Oo]ffers from|[Kk]ontaktperson|[Aa]nsprechperson)[:\s]+(?:ist\s+)?([A-ZÄÖÜ][a-zäöüéè]+(?:[ \t][A-ZÄÖÜ][a-zäöüéè]+)?)/);
-  if(ho)o.kontakt=ho[1];
+  const STOP=/^(host|hosts|since|seit|top|your|ihr|ihre|the|der|die|das|superhost|guest|gast|team|und|and)$/i;
+  for(const m of flat.matchAll(/\b(?:[Hh]osted by|[Hh]ost|[Gg]astgeber(?:in)?|[Vv]ermieter(?:in)?|[Oo]ffers from|[Ww]elcomed by|[Kk]ontaktperson|[Aa]nsprechperson)[:\s]+(?:ist\s+)?([A-ZÄÖÜ][a-zäöüéè]+(?:[ \t][A-ZÄÖÜ][a-zäöüéè]+)?)/g)){
+    const n=m[1].split(/[ \t]/).filter(w=>!STOP.test(w)).join(" "); if(n&&!STOP.test(n.split(" ")[0])){o.kontakt=n;break}}
   const pick=(re,n)=>[...new Set(lines.filter(l=>l.length<160&&re.test(l)))].slice(0,n);
   const preise=pick(/(?:CHF|Fr\.|€|EUR)\s?\d|\d[\d'.,]*\s?(?:CHF|€|EUR|Fr\.)/i,5).filter(l=>/(nacht|night|woche|week|person|tag|day|pauschal|reinigung|cleaning|kurtaxe|tourist tax|hund|dog|kind|child)/i.test(l));
   const fakten=pick(/(hunde?|dogs?|haustier|pets?|kinder|children|wlan|wi-?fi|internet|parkplatz|parking|bettwäsche|bed linen|handtücher|towels|heizung|heating|strom|power|dusche|shower|sauna|kamin|fireplace|ofen|stove)/i,10);
-  const zugang=pick(/(zufahrt|anfahrt|erreichbar|accessible|4x4|allrad|zu fuss|on foot|schneeschuh|snowshoe|seilbahn|cable car|parkier)/i,4);
+  const zugang=pick(/(zufahrt|anfahrt|erreichbar|accessible|4x4|allrad|zu fuss|on foot|seilbahn|cable car|parkier|parking|parkplatz)/i,4);
   const desc=lines.filter(l=>l.length>180&&!/cookie|datenschutz|privacy/i.test(l)).sort((a,b)=>b.length-a.length)[0];
   if(desc)o.beschreibung=desc.slice(0,700)+(desc.length>700?" …":"");
   if(zugang.length)o.anfahrt=zugang.join("\n");
