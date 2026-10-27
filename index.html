@@ -418,6 +418,14 @@ th{font-size:12px;color:var(--muted)}
   :root:not([data-theme="light"]) .btn.ghost{background:transparent;color:var(--link)}
   :root:not([data-theme="light"]) .gnav .icon:hover,:root:not([data-theme="light"]) .gnav .tripsel select{background-color:rgba(255,255,255,.08)}}
 @media (max-width:620px){.stage{padding:44px 0 40px}.section{padding:52px 0 56px}.hstats{margin-top:28px}.hstats .stat .v{font-size:1.6rem}}
+
+/* Belegung: einheitlich, ohne Personenfarben */
+.stay{background:color-mix(in srgb,var(--blue) 10%,var(--page));border:1px solid color-mix(in srgb,var(--blue) 22%,var(--page));color:var(--link);font-weight:500}
+.stay:hover{background:color-mix(in srgb,var(--blue) 16%,var(--page))}
+.stay .with{font-weight:400;color:var(--link);opacity:.85;margin-left:-2px}
+.stay small{color:var(--muted);opacity:1}
+.stay.clash{outline-color:var(--neg-ink)}
+.dot{background:color-mix(in srgb,var(--blue) 45%,var(--page))}
 </style>
 </head>
 <body class="ro">
@@ -515,6 +523,7 @@ const isKid=p=>!!(p&&p.child);
 const dogs=p=>Math.max(0,parseInt(p&&p.dogs)||0);
 const kidsOf=p=>Math.max(0,parseInt(p&&p.kids)||0);
 const kidsTxt=n=>`${n} Kind${n>1?"er":""}`;
+const withTxt=p=>[dogs(p)?(dogs(p)>1?`${dogs(p)} Hunde`:"Hund"):"",kidsOf(p)?(kidsOf(p)>1?`${kidsOf(p)} Kinder`:"Kind"):""].filter(Boolean).map(x=>" + "+x).join("");
 const heads=(t,set)=>[...set].reduce((a,id)=>a+1+kidsOf(P(t,id)),0);   // Köpfe inkl. mitgebrachter Kinder
 const wt=p=>typeof p.weight==="number"&&p.weight>=0?p.weight:1;
 
@@ -834,7 +843,7 @@ function secPlan(t){
       const a=s.from<t.start?t.start:s.from, b=s.to>t.end?t.end:s.to; if(a>=b)continue;
       const p=P(t,s.personId); if(!p)continue;
       if(!g.none&&at[s.id]>=g.beds)clashIds.add(s.id);
-      h+=`<button type="button" class="stay ${clashIds.has(s.id)?"clash":""}" style="--h:${p.hue};grid-row:${row+at[s.id]};grid-column:${col(a)+1}/${col(b)+1}" data-stay="${s.id}" title="${esc(p.name)}: ${range(s.from,s.to)}">${esc(p.name)}${dogs(p)?`<span class="plus">+</span><span class="emo" title="${dogs(p)} Hund${dogs(p)>1?"e":""}">${"🐕".repeat(Math.min(dogs(p),6))}</span>`:""}${kidsOf(p)?`<span class="plus">+</span><span class="emo" title="mit ${kidsTxt(kidsOf(p))}">${"🧒".repeat(Math.min(kidsOf(p),6))}</span>`:""}${diff(a,b)>2?`<small>${diff(s.from,s.to)} N.</small>`:""}</button>`;
+      h+=`<button type="button" class="stay ${clashIds.has(s.id)?"clash":""}" style="--h:${p.hue};grid-row:${row+at[s.id]};grid-column:${col(a)+1}/${col(b)+1}" data-stay="${s.id}" title="${esc(p.name)}: ${range(s.from,s.to)}">${esc(p.name)}${withTxt(p)?`<span class="with">${esc(withTxt(p))}</span>`:""}${diff(a,b)>2?`<small>${diff(s.from,s.to)} N.</small>`:""}</button>`;
     }
     row+=L;
   }
@@ -854,7 +863,7 @@ function secPeople(t,lg){
     const st=t.stays.filter(s=>s.personId===p.id).sort((a,b)=>a.from<b.from?-1:1);
     const desc=st.length?st.map(s=>`${range(s.from,s.to)} · ${esc(R(t,s.roomId)?.name||"ohne Zimmer")}`).join("<br>"):`<span class="mut">kein Aufenthalt</span>`;
     const fe=personFee(t,p);
-    return `<tr class="click" data-person="${p.id}"><td class="nw">${pdot(t,p.id)}${isKid(p)?` <span class="pill">Kind</span>`:""}${kidsOf(p)?` <span class="pill">🧒 ${kidsTxt(kidsOf(p))}</span>`:""}${dogs(p)?` <span class="pill">🐕 ${dogs(p)} Hund${dogs(p)>1?"e":""}</span>`:""}${wt(p)!==1?` <span class="pill">×${String(wt(p)).replace(".",",")}</span>`:""}</td><td>${desc}</td><td class="num">${lg.L[p.id].nights}</td>${hasFees(t)?`<td class="num">${fe.total?chf(fe.total)+`<span class="meta">${fe.txt.join(" · ")}</span>`:"–"}</td>`:""}</tr>`;
+    return `<tr class="click" data-person="${p.id}"><td class="nw">${pdot(t,p.id)}${isKid(p)?` <span class="pill">Kind</span>`:""}${kidsOf(p)?` <span class="pill">+ ${kidsOf(p)>1?kidsTxt(kidsOf(p)):"Kind"}</span>`:""}${dogs(p)?` <span class="pill">+ ${dogs(p)>1?dogs(p)+" Hunde":"Hund"}</span>`:""}${wt(p)!==1?` <span class="pill">×${String(wt(p)).replace(".",",")}</span>`:""}</td><td>${desc}</td><td class="num">${lg.L[p.id].nights}</td>${hasFees(t)?`<td class="num">${fe.total?chf(fe.total)+`<span class="meta">${fe.txt.join(" · ")}</span>`:"–"}</td>`:""}</tr>`;
   }).join("");
   return `<section class="section" id="sPersonen">
     <div class="shead"><h2>Personen</h2><div class="tools edit"><button class="btn sm" id="addPerson">＋ Person</button></div></div>
@@ -884,7 +893,7 @@ function tarifBox(t){
   return `<details class="box tarif" id="tarifBox" ${tarifOpen?"open":""}>
     <summary><h3 style="margin:0;display:inline">Tarife Kind / Hund</h3><span class="tsum">${sum||"keine eingetragen"}</span></summary>
     <span class="pill" style="align-self:flex-start">nur Info – berechnet bei den Personen</span>
-    <div class="row">${inp("kidNight","Kind pro Nacht")}${inp("dogNight","🐕 pro Nacht pro Hund")}${inp("dogFlat","🐕 pauschal pro Hund")}
+    <div class="row">${inp("kidNight","Kind pro Nacht")}${inp("dogNight","Hund pro Nacht")}${inp("dogFlat","Hund pauschal")}
       <label class="fl"><span>Bezahlt von</span><select data-fee="paidBy" ${ro?"disabled":""}><option value="">${rentCost(t)?`– mit der Miete${rentCost(t).paidBy&&P(t,rentCost(t).paidBy)?" ("+esc(pname(t,rentCost(t).paidBy))+")":""} –`:"– noch offen –"}</option>${t.people.map(p=>`<option value="${p.id}" ${p.id===f.paidBy?"selected":""}>${esc(p.name)}</option>`).join("")}</select></label></div>
     <p class="hint">${!any?"Noch keine Tarife eingetragen.":rows.length?"Berechnet: "+rows.map(r=>`${esc(r.p.name)} ${chf(r.x.total)} <span class="mut">(${r.x.txt.join(", ")})</span>`).join(" · "):"Wirkt sich erst aus, wenn bei einer Person Kinder oder Hunde eingetragen sind."}</p>
   </details>`;
@@ -1148,8 +1157,8 @@ function feeDialog(t){
   openDlg("Zuschläge Kind / Hund",`
     <p class="hint">Diese Tarife gelten für die ganzen Ferien und werden automatisch jeder Person belastet, die als Kind markiert ist bzw. einen Hund dabei hat (nach ihren Nächten). Leer lassen = kein Zuschlag.</p>
     <div class="row"><label class="fl"><span>Kind pro Nacht</span><input name="kidNight" inputmode="decimal" value="${f.kidNight??""}" placeholder="0.00"></label>
-    <label class="fl"><span>🐕 Hund pro Nacht</span><input name="dogNight" inputmode="decimal" value="${f.dogNight??""}" placeholder="0.00"></label>
-    <label class="fl"><span>🐕 Hund pauschal</span><input name="dogFlat" inputmode="decimal" value="${f.dogFlat??""}" placeholder="0.00"></label></div>
+    <label class="fl"><span>Hund pro Nacht</span><input name="dogNight" inputmode="decimal" value="${f.dogNight??""}" placeholder="0.00"></label>
+    <label class="fl"><span>Hund pauschal</span><input name="dogFlat" inputmode="decimal" value="${f.dogFlat??""}" placeholder="0.00"></label></div>
     <label class="fl"><span>Bezahlt von (an Vermieter)</span><select name="paidBy"><option value="">– noch offen –</option>${t.people.map(p=>`<option value="${p.id}" ${p.id===f.paidBy?"selected":""}>${esc(p.name)}</option>`).join("")}</select></label>
     <div class="plist" id="feePrev"></div>`,{
     onSave(){
@@ -1176,9 +1185,9 @@ function personDialog(t,p){
       <div class="seg">${[["1","Erwachsen ×1"],["0.5","Kind ×½"],["0","Gratis ×0"],["x","eigene"]].map(([v,l])=>`<label><input type="radio" name="wp" value="${v}" ${preset===v?"checked":""}>${l}</label>`).join("")}</div>
       <input class="inp" name="wx" type="number" step="0.05" min="0" max="5" value="${w}" ${preset==="x"?"":"hidden"} aria-label="Eigene Gewichtung">
     </div>
-    <label class="prow" style="border:1px solid var(--line);border-radius:10px;grid-template-columns:auto 1fr"><input type="number" name="kids" min="0" max="9" step="1" value="${kidsOf(p)}" aria-label="Anzahl Kinder"><span>🧒 Kind(er) dabei <span class="mut">– Kindertarif wird dieser Person automatisch verrechnet (Zuschläge)</span></span></label>
+    <label class="prow" style="border:1px solid var(--line);border-radius:10px;grid-template-columns:auto 1fr"><input type="number" name="kids" min="0" max="9" step="1" value="${kidsOf(p)}" aria-label="Anzahl Kinder"><span>Kind(er) dabei <span class="mut">– Kindertarif wird dieser Person automatisch verrechnet (Zuschläge)</span></span></label>
     <label class="prow" style="border:1px solid var(--line);border-radius:10px;grid-template-columns:auto 1fr" ${isKid(p)?"":"hidden"}><input type="checkbox" name="child" ${isKid(p)?"checked":""}><span>Diese Person ist selbst ein Kind <span class="mut">– Kindertarif statt Erwachsenenanteil beim Staffelpreis</span></span></label>
-    <label class="prow" style="border:1px solid var(--line);border-radius:10px;grid-template-columns:auto 1fr"><input type="number" name="dogs" min="0" max="9" step="1" value="${dogs(p)}" aria-label="Anzahl Hunde"><span>🐕 Hund(e) dabei <span class="mut">– Hundetarif wird automatisch verrechnet (Zuschläge)</span></span></label>
+    <label class="prow" style="border:1px solid var(--line);border-radius:10px;grid-template-columns:auto 1fr"><input type="number" name="dogs" min="0" max="9" step="1" value="${dogs(p)}" aria-label="Anzahl Hunde"><span>Hund(e) dabei <span class="mut">– Hundetarif wird automatisch verrechnet (Zuschläge)</span></span></label>
     ${isNew?`<div class="row2"><label class="fl"><span>Anreise</span><input type="date" name="from" value="${t.start}" min="${t.start}" max="${t.end}"></label><label class="fl"><span>Abreise</span><input type="date" name="to" value="${t.end}" min="${t.start}" max="${t.end}"></label></div>
       <label class="fl"><span>Zimmer</span><select name="room">${roomOpts(t,"")}</select></label>`
     :`<div class="fl"><span>Aufenthalte</span><div class="plist">${st.map(s=>`<div class="prow"><span></span><span>${range(s.from,s.to)} · ${esc(R(t,s.roomId)?.name||"ohne Zimmer")}</span><span class="sh">${diff(s.from,s.to)} N.</span><button type="button" class="btn ghost sm" data-es="${s.id}">Ändern</button></div>`).join("")||`<div class="prow"><span></span><span class="mut">kein Aufenthalt</span></div>`}</div>
@@ -1287,7 +1296,7 @@ function costDialog(t,c,preKey){
       <p class="hint" id="modeHint"></p>
     </div>
     <div class="fl"><span>Wer bezahlt mit</span>
-      <div class="plist" id="plist">${t.people.map(p=>`<label class="prow" data-pid="${p.id}"><input type="checkbox" name="who" value="${p.id}" ${sel.has(p.id)?"checked":""}><span>${pdot(t,p.id)}${isKid(p)?' <span class="pill">Kind</span>':""}${kidsOf(p)?` ${"🧒".repeat(Math.min(kidsOf(p),6))}`:""}${dogs(p)?' 🐕':""}</span><input type="number" name="pct_${p.id}" step="0.1" min="0" max="100" value="${(cur.pct||{})[p.id]??""}" placeholder="%" aria-label="Prozent ${esc(p.name)}"><span class="sh" data-sh="${p.id}"></span></label>`).join("")}</div>
+      <div class="plist" id="plist">${t.people.map(p=>`<label class="prow" data-pid="${p.id}"><input type="checkbox" name="who" value="${p.id}" ${sel.has(p.id)?"checked":""}><span>${pdot(t,p.id)}${isKid(p)?' <span class="pill">Kind</span>':""}${withTxt(p)?`<span class="mut">${esc(withTxt(p))}</span>`:""}</span><input type="number" name="pct_${p.id}" step="0.1" min="0" max="100" value="${(cur.pct||{})[p.id]??""}" placeholder="%" aria-label="Prozent ${esc(p.name)}"><span class="sh" data-sh="${p.id}"></span></label>`).join("")}</div>
       <div class="chips"><button type="button" class="chip" id="wAll">Alle</button><button type="button" class="chip" id="wNone">Keine</button><button type="button" class="chip" id="pEven">% gleichmässig</button></div>
     </div>
     <div class="preview"><span>Total</span><b id="cTot">–</b></div>`,{
