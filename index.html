@@ -484,7 +484,8 @@ details.more .hint{text-align:center}
 .brand{gap:9px}
 .brand .bname{font-weight:600}
 .brand .logo svg{width:20px;height:20px}
-@media (max-width:760px){.brand .bname{display:none}}
+@media (max-width:760px){.brand{gap:7px}.brand .bname{font-size:14px;letter-spacing:-.015em}}
+@media (max-width:360px){.brand .bname{font-size:13px}}
 /* Fusszeile mit Spruch */
 .gfoot{flex-direction:column;gap:14px;padding:44px 0 34px}
 .sign{display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--ink)}
@@ -493,13 +494,22 @@ details.more .hint{text-align:center}
 .logo.big .er{font-size:20px;margin-left:-2px;transform:translateY(-2px)}
 .fmeta .viewnote{padding:0;border:0}
 .fmeta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;font-size:12px;color:var(--muted)}
+
+/* Aktiver Menüpunkt: blaue Pille, die zum neuen Punkt gleitet */
+.gnav .jump{position:relative}
+.jpill{position:absolute;left:0;top:50%;height:28px;margin-top:-14px;border-radius:999px;background:color-mix(in srgb,var(--blue) 12%,transparent);opacity:0;pointer-events:none;
+  transition:transform .42s cubic-bezier(.32,.72,0,1),width .42s cubic-bezier(.32,.72,0,1),opacity .2s;z-index:0}
+.gnav .jump a{position:relative;z-index:1;transition:color .25s}
+.gnav .jump a.on{color:var(--link);opacity:1;font-weight:500}
+.gnav .jump a[hidden]{display:none}
+@media (prefers-reduced-motion: reduce){.jpill{transition:none}}
 </style>
 </head>
 <body class="ro">
 <nav class="gnav" aria-label="Navigation">
   <div class="gin">
     <a class="brand" href="/ferienhaus/" aria-label="Der Ferienhauser – Startseite"><span class="logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7v8.5a1 1 0 0 1-1 1h-5v-6h-5v6h-5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span class="er">-er</span></span><span class="bname">Der Ferienhauser</span></a>
-    <div class="jump" id="jump" hidden>
+    <div class="jump" id="jump" hidden><span class="jpill" id="jpill" aria-hidden="true"></span>
       <a href="#top" class="j-top">Übersicht</a><a href="#sInfo">Infos</a><a href="#sBelegung">Belegung</a><a href="#sPersonen">Personen</a><a href="#sKosten">Kosten</a><a href="#sAbrechnung">Abrechnung</a>
     </div>
     <div class="tripsel">
@@ -935,6 +945,7 @@ function render(){
   ${secCosts(t)}
   ${secSettle(t,lg)}`;
   decorate();
+  requestAnimationFrame(spy);
   wire(t);
 }
 
@@ -1120,6 +1131,37 @@ function collapseHints(root,sel){
   d.innerHTML=`<summary>Erklärung</summary>`;
   hs[hs.length-1].after(d); for(const h of hs)d.appendChild(h);
 }
+
+/* ================= Navigation: aktiver Bereich mit schwebender Markierung ================= */
+let navLock=0;
+function navLinks(){return [...$("jump").querySelectorAll("a")]}
+function moveNav(a,instant){
+  const p=$("jpill"), j=$("jump"); navLinks().forEach(x=>x.classList.toggle("on",x===a));
+  if(!a){p.style.opacity=0;return}
+  if(instant)p.style.transition="none";
+  p.style.opacity=1; p.style.width=a.offsetWidth+"px"; p.style.transform=`translateX(${a.offsetLeft}px)`;
+  if(instant){p.offsetWidth;p.style.transition=""}
+  if(j.scrollWidth>j.clientWidth){const tgt=a.offsetLeft-(j.clientWidth-a.offsetWidth)/2;j.scrollTo({left:Math.max(0,tgt),behavior:instant?"auto":"smooth"})}
+}
+function spy(){
+  if(Date.now()<navLock||$("jump").hidden)return;
+  const off=document.querySelector(".gnav").offsetHeight+60;
+  let cur=null;
+  for(const a of navLinks()){const id=a.getAttribute("href").slice(1), el=document.getElementById(id);
+    a.hidden=!el; if(!el)continue;
+    if(el.getBoundingClientRect().top-off<=0)cur=a}
+  if(innerHeight+scrollY>=document.documentElement.scrollHeight-4){const l=navLinks().filter(a=>!a.hidden);cur=l[l.length-1]||cur}
+  if(cur&&getComputedStyle(cur).display==="none")cur=null;
+  moveNav(cur||null, !$("jpill").style.width);
+}
+addEventListener("scroll",()=>requestAnimationFrame(spy),{passive:true});
+addEventListener("resize",()=>requestAnimationFrame(()=>{const a=$("jump").querySelector("a.on");if(a)moveNav(a,true)}));
+$("jump").addEventListener("click",e=>{const a=e.target.closest("a");if(!a)return;e.preventDefault();
+  const el=document.getElementById(a.getAttribute("href").slice(1));if(!el)return;
+  navLock=Date.now()+900; moveNav(a);
+  const y=el===$("top")?0:el.getBoundingClientRect().top+scrollY-$("jump").closest(".gnav").offsetHeight+1;
+  scrollTo({top:y,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+  setTimeout(()=>{navLock=0;spy()},950)});
 
 /* ================= Interaktion ================= */
 let lastTransfers=[], dragDone=false;
