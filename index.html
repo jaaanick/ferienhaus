@@ -147,6 +147,22 @@ td .meta{display:block;font-size:.76rem;color:var(--muted)}
 .box ol{padding-left:1.3em;display:flex;flex-direction:column;gap:3px}
 .box b{color:var(--ink)}
 .box.auth{border-color:var(--accent)}
+.infobar{display:flex;flex-direction:column;gap:8px;margin-top:-10px}
+.iis{display:flex;flex-wrap:wrap;gap:6px}
+.ii{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:var(--ink);text-decoration:none;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 10px;max-width:100%;min-width:0}
+.ii b{font-weight:400}
+a.ii:hover{border-color:var(--accent);color:var(--accent)}
+.imore{font-size:.84rem}
+.imore summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:.8rem}
+.imore>div{margin-top:8px}
+.imore h3{margin:0 0 2px}
+.imore p{margin:0;color:var(--muted);max-width:80ch}
+.infofs summary{cursor:pointer;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;padding:4px 0}
+.infogrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.infogrid .wide{grid-column:1/-1}
+@media (max-width:520px){.infogrid{grid-template-columns:1fr}}
+textarea.inp{font:inherit;font-size:.9rem;resize:vertical;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:8px 10px;width:100%;min-width:0}
+.inp.fresh{border-color:var(--pos-ink);background:var(--pos-bg)}
 .box.tarif{gap:8px;padding:0}
 .box.tarif>*:not(summary){margin-inline:14px}
 .box.tarif>:last-child{margin-bottom:12px}
@@ -218,6 +234,7 @@ dialog form{display:flex;flex-direction:column;max-height:calc(100dvh - 26px)}
       <button class="icon edit" id="tripNew" title="Neue Ferien" aria-label="Neue Ferien">＋</button>
     </div>
   </header>
+  <div class="infobar" id="infobar" hidden></div>
 
   <div class="box auth" id="auth" hidden>
     <p><b>Nur Ansicht.</b> Zum Bearbeiten auf diesem Gerät einmal einen GitHub-Token eingeben. Er bleibt nur in diesem Browser gespeichert.</p>
@@ -455,6 +472,67 @@ function lanes(t,roomId){                 // Aufenthalte eines Zimmers auf Bette
   return {count:ends.length,at};
 }
 
+/* ================= Unterkunft-Infos ================= */
+const host=u=>{try{return new URL(u).hostname.replace(/^www\./,"")}catch(_){return u}};
+const telHref=x=>"tel:"+String(x).replace(/[^\d+]/g,"");
+function renderInfo(t){
+  const i=t.info||{}, links=(t.links||[]).filter(Boolean), it=[];
+  if(i.adresse)it.push(`<a class="ii" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.adresse)}" target="_blank" rel="noopener"><b>📍</b>${esc(i.adresse)}</a>`);
+  if(i.checkin||i.checkout)it.push(`<span class="ii"><b>🕑</b>${i.checkin?`Check-in ${esc(i.checkin)}`:""}${i.checkin&&i.checkout?" · ":""}${i.checkout?`Check-out ${esc(i.checkout)}`:""}</span>`);
+  if(i.maxGaeste)it.push(`<span class="ii"><b>👥</b>max. ${esc(i.maxGaeste)} Gäste</span>`);
+  if(i.kontakt)it.push(`<span class="ii"><b>👤</b>${esc(i.kontakt)}</span>`);
+  if(i.telefon)it.push(`<a class="ii" href="${telHref(i.telefon)}"><b>☎</b>${esc(i.telefon)}</a>`);
+  if(i.email)it.push(`<a class="ii" href="mailto:${esc(i.email)}"><b>✉</b>${esc(i.email)}</a>`);
+  for(const l of links)it.push(`<a class="ii" href="${esc(l)}" target="_blank" rel="noopener"><b>🔗</b>${esc(host(l))}</a>`);
+  const more=[["Anfahrt / Zugang",i.anfahrt],["Notizen",i.notizen],["Beschreibung",i.beschreibung]].filter(x=>x[1]);
+  $("infobar").hidden=!it.length&&!more.length;
+  $("infobar").innerHTML=`<div class="iis">${it.join("")}</div>${more.length?`<details class="imore"><summary>Weitere Infos</summary>${more.map(([k,v])=>`<div><h3>${k}</h3><p>${esc(v).replace(/\n/g,"<br>")}</p></div>`).join("")}</details>`:""}`;
+}
+
+/* Homepage auslesen: Abruf über r.jina.ai (liefert Seiteninhalt als Text, umgeht CORS) */
+async function fetchPage(u){
+  const r=await fetch("https://r.jina.ai/"+u,{signal:AbortSignal.timeout(30000),headers:{"Accept":"text/plain"}});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  return await r.text();
+}
+function extractInfo(raw){
+  const title=((raw.match(/^Title:\s*(.+)$/m)||[])[1]||"").split(/\s[|–—-]\s/)[0].trim();
+  const txt=raw.replace(/^(Title|URL Source|Markdown Content|Published Time):.*$/gm,"").replace(/!\[[^\]]*\]\([^)]*\)/g,"").replace(/\[([^\]]*)\]\([^)]*\)/g,"$1").replace(/[*_#>|]+/g," ");
+  const lines=txt.split("\n").map(l=>l.replace(/\s+/g," ").trim()).filter(l=>l.length>1);
+  const flat=lines.join("\n"), o={};
+  const h1=(raw.match(/^#\s+(.+)$/m)||[])[1];
+  o.name=(h1||title||"").trim().slice(0,80);
+  // Adresse: Strasse + PLZ Ort oder nur PLZ Ort
+  const addrRe=/(?:([A-ZÄÖÜ][\wäöüéèà.'\- ]{2,40}\s\d{1,4}[a-z]?),?\s*)?(?:(?:CH|D|A|FL|Switzerland|Schweiz|Suisse|Svizzera|Germany|Deutschland|Austria|Österreich)\s?[-–]\s?)?\b(\d{4,5})\s+([A-ZÄÖÜ][\wäöüéèà.\- ]{1,30}(?:\s?\([A-Z]{2}\))?)/;
+  for(const l of lines){if(l.length>140)continue;const m=l.match(addrRe);if(!m)continue;
+    if(/\b(19|20)\d{2}\b/.test(m[2])&&!m[1])continue;           // Jahreszahlen ignorieren
+    o.adresse=[m[1],`${m[2]} ${m[3].trim()}`].filter(Boolean).join(", ");o.ort=m[3].trim().replace(/\s?\([A-Z]{2}\)$/,"");break}
+  const tm="(\\d{1,2}(?:[:.]\\d{2})?)\\s*(?:uhr|h\\b)?";
+  const ci=flat.match(new RegExp(`(?:check[- ]?in|anreise|arrivée|arrivo)[^\\d\\n]{0,25}${tm}(?:\\s*[–-]\\s*${tm})?`,"i"));
+  if(ci)o.checkin=norm(ci[1])+(ci[2]?"–"+norm(ci[2]):"");
+  const co=flat.match(new RegExp(`(?:check[- ]?out|abreise|départ|partenza)[^\\d\\n]{0,25}${tm}`,"i"));
+  if(co)o.checkout=norm(co[1]);
+  const mg=flat.match(/(?:max(?:\.|imal|imum)?\.?\s*|bis (?:zu )?|up to\s*)(\d{1,2})\s*(?:guests|gäste|personen|persons|people|pers\.|betten|beds)/i)||flat.match(/(\d{1,2})\s*(?:gäste|guests)\b/i);
+  if(mg)o.maxGaeste=mg[1];
+  const em=flat.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}/i); if(em&&!/(sentry|example|wixpress|\.png|\.jpg)/i.test(em[0]))o.email=em[0];
+  const ph=flat.match(/(?:\+|00)(?:41|49|43|423|39|33)[\s\d()/.-]{8,16}\d/)||flat.match(/(?:tel(?:efon)?|phone|fon)[.:\s]*((?:0)\d{2}[\s\d/.-]{7,12}\d)/i);
+  if(ph)o.telefon=(ph[1]||ph[0]).trim();
+  const ho=flat.match(/\b(?:[Hh]osted by|[Hh]ost|[Gg]astgeber(?:in)?|[Vv]ermieter(?:in)?|[Oo]ffers from|[Kk]ontaktperson|[Aa]nsprechperson)[:\s]+(?:ist\s+)?([A-ZÄÖÜ][a-zäöüéè]+(?:[ \t][A-ZÄÖÜ][a-zäöüéè]+)?)/);
+  if(ho)o.kontakt=ho[1];
+  const pick=(re,n)=>[...new Set(lines.filter(l=>l.length<160&&re.test(l)))].slice(0,n);
+  const preise=pick(/(?:CHF|Fr\.|€|EUR)\s?\d|\d[\d'.,]*\s?(?:CHF|€|EUR|Fr\.)/i,5).filter(l=>/(nacht|night|woche|week|person|tag|day|pauschal|reinigung|cleaning|kurtaxe|tourist tax|hund|dog|kind|child)/i.test(l));
+  const fakten=pick(/(hunde?|dogs?|haustier|pets?|kinder|children|wlan|wi-?fi|internet|parkplatz|parking|bettwäsche|bed linen|handtücher|towels|heizung|heating|strom|power|dusche|shower|sauna|kamin|fireplace|ofen|stove)/i,10);
+  const zugang=pick(/(zufahrt|anfahrt|erreichbar|accessible|4x4|allrad|zu fuss|on foot|schneeschuh|snowshoe|seilbahn|cable car|parkier)/i,4);
+  const desc=lines.filter(l=>l.length>180&&!/cookie|datenschutz|privacy/i.test(l)).sort((a,b)=>b.length-a.length)[0];
+  if(desc)o.beschreibung=desc.slice(0,700)+(desc.length>700?" …":"");
+  if(zugang.length)o.anfahrt=zugang.join("\n");
+  const notes=[];if(preise.length)notes.push("Preise: "+preise.join(" · "));if(fakten.length)notes.push("Ausstattung: "+fakten.join(" · "));
+  if(notes.length)o.notizen=notes.join("\n");
+  return o;
+  function norm(x){x=String(x).replace(".",":");return /:/.test(x)?x.padStart(5,"0"):x.padStart(2,"0")+":00"}
+}
+const INFO_FIELDS=[["adresse","Adresse"],["checkin","Check-in"],["checkout","Check-out"],["maxGaeste","Max. Gäste"],["kontakt","Vermieter / Kontakt"],["telefon","Telefon"],["email","E-Mail"],["anfahrt","Anfahrt / Zugang"],["notizen","Notizen"],["beschreibung","Beschreibung"]];
+
 /* ================= Rendering ================= */
 function render(){
   const sel=$("tripSel");
@@ -465,12 +543,14 @@ function render(){
   const t=T();
   $("jump").hidden=!t;
   if(!t){
+    $("infobar").hidden=true;
     $("title").textContent="Ferienhaus-Planer";$("subtitle").textContent="Zimmer, Belegung und Kosten fair aufteilen";
     $("main").innerHTML=loaded?`<div class="hero"><b>Noch keine Ferien erfasst</b><span>Ferienhaus mit Datum und Zimmern anlegen, dann Personen eintragen und Kosten erfassen.</span>${token?`<button class="btn" onclick="tripDialog()">Erste Ferien erfassen</button>`:""}</div>`:"";
     return;
   }
   $("title").textContent=t.name;
   $("subtitle").textContent=[t.ort,range(t.start,t.end)].filter(Boolean).join(" · ");
+  renderInfo(t);
   const lg=ledger(t), N=diff(t.start,t.end), beds=t.rooms.reduce((s,r)=>s+(+r.beds||0),0);
   let peak=0; for(const n of nights(t.start,t.end))peak=Math.max(peak,heads(t,presentOn(t,n)));
   $("main").innerHTML=`
@@ -720,26 +800,36 @@ function tripDialog(t){
   const isNew=!t;
   const today=isoToday();
   const cur=t||{name:"",ort:"",start:addDays(today,30),end:addDays(today,37),rooms:[{id:uid(),name:"Zimmer 1",beds:2},{id:uid(),name:"Zimmer 2",beds:2}]};
+  const inf=cur.info||{}, area=k=>k==="anfahrt"||k==="notizen"||k==="beschreibung";
   let rooms=cur.rooms.map(r=>({...r}));
   const roomRows=()=>rooms.map((r,i)=>`<div class="room"><input class="inp" data-rn="${i}" value="${esc(r.name)}" placeholder="Zimmername" aria-label="Zimmername"><input class="inp" data-rb="${i}" type="number" min="0" max="20" value="${r.beds}" aria-label="Schlafplätze" title="Schlafplätze"><button type="button" class="icon" data-rd="${i}" aria-label="Zimmer entfernen">−</button></div>`).join("");
   openDlg(isNew?"Neue Ferien":"Ferien bearbeiten",`
+    <div class="fl"><span>Homepage(s) der Unterkunft</span>
+      <textarea class="inp" name="links" rows="2" placeholder="https://… (eine Adresse pro Zeile)">${esc((cur.links||[]).join("\n"))}</textarea>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><button type="button" class="btn ghost sm" id="fetchInfo">↓ Infos von Homepage holen</button><span class="hint" id="fetchMsg"></span></div>
+    </div>
     <label class="fl"><span>Name</span><input name="name" required value="${esc(cur.name)}" placeholder="z.B. Chalet Engadin"></label>
     <label class="fl"><span>Ort / Unterkunft</span><input name="ort" value="${esc(cur.ort||"")}" placeholder="z.B. Pontresina"></label>
     <div class="row2"><label class="fl"><span>Anreise</span><input type="date" name="start" value="${cur.start}"></label><label class="fl"><span>Abreise</span><input type="date" name="end" value="${cur.end}"></label></div>
     <div class="fl"><span>Zimmer und Schlafplätze</span>
       <div class="rooms" id="rooms">${roomRows()}</div>
       <div><button type="button" class="btn ghost sm" id="rAdd">＋ Zimmer</button></div>
-    </div>`,{
+    </div>
+    <details class="fl infofs" ${Object.values(inf).some(Boolean)?"":""}><summary>Unterkunft-Infos (Adresse, Kontakt, Check-in …)</summary>
+      <div class="infogrid">${INFO_FIELDS.map(([k,l])=>`<label class="fl ${area(k)?"wide":""}"><span>${l}</span>${area(k)?`<textarea class="inp" name="i_${k}" rows="${k==="beschreibung"?4:2}">${esc(inf[k]||"")}</textarea>`:`<input class="inp" name="i_${k}" value="${esc(inf[k]||"")}">`}</label>`).join("")}</div>
+    </details>`,{
     onSave(){
       const name=F("name").value.trim(), s=F("start").value, e=F("end").value;
       if(!name)return fail("Bitte einen Namen eingeben.");
       if(!s||!e||e<=s)return fail("Die Abreise muss nach der Anreise liegen.");
       sync(); rooms=rooms.filter(r=>r.name.trim()||r.beds>0).map(r=>({id:r.id,name:r.name.trim()||"Zimmer",beds:Math.max(0,parseInt(r.beds)||0)}));
-      if(isNew){const nt={id:uid(),name,ort:F("ort").value.trim(),start:s,end:e,rooms,people:[],stays:[],costs:[],payments:[],round5:true};db.trips.push(nt);curId=nt.id;LS.set("ferienhausTrip",curId)}
+      const info={};for(const[k]of INFO_FIELDS){const v=F("i_"+k).value.trim();if(v)info[k]=v}
+      const links=F("links").value.split(/[\s,]+/).map(x=>x.trim()).filter(x=>/^https?:\/\//i.test(x));
+      if(isNew){const nt={id:uid(),name,ort:F("ort").value.trim(),start:s,end:e,rooms,info,links,people:[],stays:[],costs:[],payments:[],round5:true};db.trips.push(nt);curId=nt.id;LS.set("ferienhausTrip",curId)}
       else{
         const kept=new Set(rooms.map(r=>r.id));
         for(const st of t.stays)if(st.roomId&&!kept.has(st.roomId))st.roomId="";
-        Object.assign(t,{name,ort:F("ort").value.trim(),start:s,end:e,rooms});
+        Object.assign(t,{name,ort:F("ort").value.trim(),start:s,end:e,rooms,info,links});
       }
       commit();
     },
@@ -753,6 +843,28 @@ function tripDialog(t){
     if(t&&t.stays.some(s=>s.roomId===r.id)&&!confirm(`In «${r.name}» sind Personen eingetragen. Trotzdem entfernen? Sie werden «ohne Zimmer» geführt.`))return;
     rooms.splice(+b.dataset.rd,1);box.innerHTML=roomRows()};
   F("start").onchange=()=>{if(F("end").value<=F("start").value)F("end").value=addDays(F("start").value,7)};
+  $("fetchInfo").onclick=async()=>{
+    const urls=F("links").value.split(/[\s,]+/).map(x=>x.trim()).filter(Boolean).map(x=>/^https?:\/\//i.test(x)?x:"https://"+x);
+    if(!urls.length){$("fetchMsg").textContent="Bitte zuerst eine Homepage eingeben.";return}
+    F("links").value=urls.join("\n");
+    const b=$("fetchInfo"); b.disabled=true; $("fetchMsg").classList.remove("err"); $("fetchMsg").textContent=`Lese ${urls.length} Seite${urls.length>1?"n":""} …`;
+    const res=await Promise.allSettled(urls.map(u=>fetchPage(u).then(extractInfo)));
+    const ok=res.filter(r=>r.status==="fulfilled").map(r=>r.value), bad=urls.filter((u,i)=>res[i].status!=="fulfilled");
+    const filled=[];
+    const put=(name,val,label)=>{const el=F(name);if(!el||!val||el.value.trim())return;el.value=val;el.classList.add("fresh");filled.push(label)};
+    for(const o of ok){
+      put("name",o.name,"Name"); put("ort",o.ort,"Ort");
+      for(const[k,l]of INFO_FIELDS){
+        if(k==="notizen"&&o.notizen&&F("i_notizen").value.trim()&&!F("i_notizen").value.includes(o.notizen)&&F("i_notizen").classList.contains("fresh")){F("i_notizen").value+="\n"+o.notizen;continue}
+        put("i_"+k,o[k],l);
+      }
+    }
+    if(filled.length)form.querySelector(".infofs").open=true;
+    const uniq=[...new Set(filled)];
+    $("fetchMsg").textContent=(uniq.length?`Eingetragen: ${uniq.join(", ")}. Bitte prüfen.`:ok.length?"Keine neuen Infos gefunden (bereits ausgefüllte Felder werden nicht überschrieben).":"")+(bad.length?` Nicht lesbar: ${bad.map(host).join(", ")}.`:"");
+    $("fetchMsg").classList.toggle("err",!ok.length);
+    b.disabled=false;
+  };
 }
 
 /* ---------- Zuschläge Kind/Hund ---------- */
