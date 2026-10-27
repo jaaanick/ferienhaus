@@ -516,6 +516,11 @@ details.more .hint{text-align:center}
 .rbox[open] .rlbl::after{transform:rotate(-90deg)}
 .rbox .rlbl:hover{background:var(--link);color:#fff}
 .rbox[open]>summary{margin-bottom:18px}
+
+/* Ferienwahl in der Bühne statt in der Leiste */
+.tswitch{display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;font-size:13px;color:var(--muted)}
+.tswitch select{border:0;background:var(--page);border-radius:999px;padding:6px 28px 6px 14px;font-size:13px;font-weight:500;color:var(--ink);max-width:min(70vw,320px);text-overflow:ellipsis;cursor:pointer}
+.gnav .tripsel{flex:0 0 auto;margin-left:auto!important}
 </style>
 </head>
 <body class="ro">
@@ -526,7 +531,6 @@ details.more .hint{text-align:center}
       <a href="#top" class="j-top">Übersicht</a><a href="#sInfo">Infos</a><a href="#sBelegung">Belegung</a><a href="#sPersonen">Personen</a><a href="#sKosten">Kosten</a><a href="#sAbrechnung">Abrechnung</a>
     </div>
     <div class="tripsel">
-      <select id="tripSel" aria-label="Ferien wählen"></select>
       <button class="icon edit" id="tripEdit" title="Ferien bearbeiten" aria-label="Ferien bearbeiten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z M13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
       <button class="icon edit" id="tripShare" title="Link dieser Ferien kopieren" aria-label="Link kopieren" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button class="icon edit" id="tripNew" title="Neue Ferien" aria-label="Neue Ferien"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
@@ -535,6 +539,7 @@ details.more .hint{text-align:center}
 </nav>
 <div class="wrap" id="top">
   <header class="stage">
+    <label class="tswitch" id="tswitch" hidden><span>Ferien wechseln</span><select id="tripSel" aria-label="Ferien wählen"></select></label>
     <h1 id="title">Der Ferienhauser</h1>
     <div class="sub" id="subtitle">Zimmer, Belegung und Kosten fair aufteilen</div>
     <div class="cta" id="heroCta" hidden>
@@ -911,7 +916,7 @@ const INFO_FIELDS=[["adresse","Adresse"],["koordinaten","Haus – Koordinaten / 
 function render(){
   const sel=$("tripSel"), kn=known(), cc=T()?codes.get(curId):"";
   sel.innerHTML=(cc?"":`<option value="">${kn.length?"Ferien wählen …":"Keine Ferien"}</option>`)+kn.map(k=>`<option value="${esc(k.code)}" ${k.code===cc?"selected":""}>${esc(k.name)}${k.start?" · "+k.start.slice(0,4):""}</option>`).join("");
-  sel.disabled=!kn.length;
+  sel.disabled=!kn.length; $("tswitch").hidden=!T()||kn.length<2;
   $("tripEdit").hidden=!T(); $("tripShare").hidden=!T();
   const t=T();
   $("jump").hidden=!t; $("heroCta").hidden=!t||!token;
