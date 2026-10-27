@@ -975,7 +975,7 @@ function secSettle(t,lg){
   const tot=Object.values(lg.L).reduce((a,x)=>({o:a.o+x.owed,p:a.p+x.paid}),{o:0,p:0});
   const pays=[...t.payments].sort((a,b)=>(a.date||"")<(b.date||"")?1:-1).map(z=>`<div class="tr done"><div class="who">${pdot(t,z.from)}<span class="arrow">→</span>${pdot(t,z.to)}<span class="pill">${z.date?fd(z.date):"bezahlt"}</span></div><div class="amt">${chf(toRp(z.amount))}</div><button class="btn ghost sm edit" data-delpay="${z.id}">Rückgängig</button></div>`).join("");
   return `<section class="section" id="sAbrechnung">
-    <div class="shead"><h2>Abrechnung</h2><div class="tools"><button class="btn ghost sm" id="copySum">Als Text kopieren</button></div></div>
+    <div class="shead"><h2>Abrechnung</h2><div class="tools edit"><button class="btn ghost sm" id="copySum">Als Text kopieren</button></div></div>
     ${lg.problems.length?`<p class="err">${lg.problems.length} Kostenposten nicht verrechenbar: ${lg.problems.map(x=>esc(x.c.title)).join(", ")}. Bitte Aufteilung prüfen.</p>`:""}
     ${lg.open?`<p class="hint"><span class="pill warn">noch offen</span> CHF ${chf(lg.open)} ohne Zahler sind noch nicht in der Abrechnung enthalten.</p>`:""}
     <div class="tablewrap"><table><thead><tr><th>Person</th><th class="num">Nächte</th><th class="num">Anteil</th><th class="num">Bezahlt</th><th class="num">Ausgeglichen</th><th class="num">Saldo</th></tr></thead>
