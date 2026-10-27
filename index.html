@@ -503,6 +503,19 @@ details.more .hint{text-align:center}
 .gnav .jump a.on{color:var(--link);opacity:1;font-weight:500}
 .gnav .jump a[hidden]{display:none}
 @media (prefers-reduced-motion: reduce){.jpill{transition:none}}
+
+/* Infos & Hausregeln einklappbar */
+.rbox>summary{list-style:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;margin-bottom:4px}
+.rbox>summary::-webkit-details-marker{display:none}
+.rbox .ropen{color:var(--muted);font-size:.95rem;max-width:640px}
+.rbox[open] .ropen{display:none}
+.rbox .rlbl{display:inline-flex;align-items:center;gap:6px;color:var(--link);border:1px solid var(--link);border-radius:980px;padding:7px 16px;font-size:14px}
+.rbox .rlbl::before{content:"Alle Infos anzeigen"}
+.rbox[open] .rlbl::before{content:"Einklappen"}
+.rbox .rlbl::after{content:"›";display:inline-block;transform:rotate(90deg);transition:transform .2s}
+.rbox[open] .rlbl::after{transform:rotate(-90deg)}
+.rbox .rlbl:hover{background:var(--link);color:#fff}
+.rbox[open]>summary{margin-bottom:18px}
 </style>
 </head>
 <body class="ro">
@@ -954,7 +967,8 @@ function secRules(t){
   if(!groups.length&&!token)return "";
   return `<section class="section" id="sInfo">
     <div class="shead"><h2>Wichtige Infos &amp; Hausregeln</h2><div class="tools edit">${has?`<button class="btn ghost sm" id="rulesFetch">Von Homepage holen</button>`:""}<button class="btn sm" id="rulesEdit">${groups.length?"Bearbeiten":"Erfassen"}</button></div></div>
-    ${groups.length?`<div class="rgrid">${groups.map(([c,ls])=>`<div class="rtile"><h4>${esc(c)}</h4><ul>${ls.map(l=>`<li>${esc(l)}</li>`).join("")}</ul></div>`).join("")}</div>`
+    ${groups.length?`<details class="rbox" id="rulesBox" ${LS.get("fhRulesOpen")==="1"?"open":""}><summary><span class="ropen">${groups.reduce((n,[,l])=>n+l.length,0)} Infos zu ${groups.map(([c])=>esc(c)).join(", ")}</span><span class="rlbl"></span></summary>
+      <div class="rgrid">${groups.map(([c,ls])=>`<div class="rtile"><h4>${esc(c)}</h4><ul>${ls.map(l=>`<li>${esc(l)}</li>`).join("")}</ul></div>`).join("")}</div></details>`
     :`<p class="hint keep">Noch keine Infos erfasst.${has?" «Von Homepage holen» liest Hausregeln und wichtige Hinweise automatisch aus.":" Homepage der Unterkunft unter «Ferien bearbeiten» eintragen, dann lassen sich die Infos automatisch holen."}</p>`}
     <span class="rmsg toast" id="rulesMsg"></span>
   </section>`;
@@ -1155,6 +1169,7 @@ function spy(){
   moveNav(cur||null, !$("jpill").style.width);
 }
 addEventListener("scroll",()=>requestAnimationFrame(spy),{passive:true});
+document.addEventListener("toggle",e=>{if(e.target.id==="rulesBox")LS.set("fhRulesOpen",e.target.open?"1":"0")},true);
 addEventListener("resize",()=>requestAnimationFrame(()=>{const a=$("jump").querySelector("a.on");if(a)moveNav(a,true)}));
 $("jump").addEventListener("click",e=>{const a=e.target.closest("a");if(!a)return;e.preventDefault();
   const el=document.getElementById(a.getAttribute("href").slice(1));if(!el)return;
