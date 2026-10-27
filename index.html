@@ -473,7 +473,7 @@ details.more .hint{text-align:center}
     <div class="tripsel">
       <select id="tripSel" aria-label="Ferien wählen"></select>
       <button class="icon edit" id="tripEdit" title="Ferien bearbeiten" aria-label="Ferien bearbeiten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z M13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
-      <button class="icon" id="tripShare" title="Link dieser Ferien kopieren" aria-label="Link kopieren" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="icon edit" id="tripShare" title="Link dieser Ferien kopieren" aria-label="Link kopieren" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button class="icon edit" id="tripNew" title="Neue Ferien" aria-label="Neue Ferien"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
     </div>
   </div>
@@ -484,7 +484,7 @@ details.more .hint{text-align:center}
     <div class="sub" id="subtitle">Zimmer, Belegung und Kosten fair aufteilen</div>
     <div class="cta" id="heroCta" hidden>
       <button class="btn edit" type="button" id="ctaEdit">Ferien bearbeiten</button>
-      <button class="btn ghost" type="button" id="ctaShare">Link teilen</button>
+      <button class="btn ghost edit" type="button" id="ctaShare">Link teilen</button>
     </div>
     <div class="infobar" id="infobar" hidden></div>
     <div class="status" id="status">Wird geladen …</div>
@@ -810,7 +810,7 @@ function render(){
   sel.disabled=!kn.length;
   $("tripEdit").hidden=!T(); $("tripShare").hidden=!T();
   const t=T();
-  $("jump").hidden=!t; $("heroCta").hidden=!t;
+  $("jump").hidden=!t; $("heroCta").hidden=!t||!token;
   if(!t){
     $("infobar").hidden=true;
     $("title").textContent="Ferienhaus-Planer";$("subtitle").textContent="Zimmer, Belegung und Kosten fair aufteilen";
