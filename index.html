@@ -816,6 +816,24 @@ function extractInfo(raw){
 const RULE_KW=/(hausregel|house rule|rauch|smok|nichtraucher|haustier|\bpets?\b|\bhunde?\b|\bdogs?\b|ruhezeit|nachtruhe|quiet|party|partys|feiern|lärm|noise|schlüssel|\bkeys?\b|abfall|müll|kehricht|waste|rubbish|garbage|recycl|bettwäsche|bed linen|handtücher|towels|\bstrom\b|no power|electric|trinkwasser|drinking water|heizung|heating|ofen|stove|brennholz|firewood|parkplatz|parking|zufahrt|accessible|4x4|allrad|schneeketten|snow chains|mindestaufenthalt|minimum stay|kaution|deposit|stornier|cancell|endreinigung|final cleaning|kurtaxe|tourist tax|check-?in|check-?out|anreise|abreise|wlan|wi-?fi|mobilfunk|reception|dusche|shower|toilette|toilet|grillieren|feuerstelle|fireplace|kinder willkommen|children welcome|dogs welcome|hunde willkommen)/i;
 const RULE_HEAD=/(hausregel|house rules|regeln|\brules\b|wichtig|important|gut zu wissen|good to know|hinweise|policies|richtlinien|bitte beachten|please note|booking information|buchungsinformation)/i;
 const RULE_SKIP=/(thank|danke|wonderful|wunderschön|wunderbar|amazing|traumhaft|toll\b|super\b|we had|wir hatten|again|wieder kommen|wiederkommen|recommend|empfehlen|review|bewertung|★|cookie|datenschutz|privacy|newsletter|anmelden|sign in|log in)/i;
+/* Passende Unterseiten (Hausregeln, Anfahrt, Preise, AGB …) derselben Website mitlesen */
+const SUB_RE=/(hausregel|regeln|rules|wichtig|info|gut-?zu-?wissen|faq|anfahrt|anreise|zufahrt|about|ueber|über|alph(ü|ue)tte|unterkunft|haus|ausstattung|amenit|preis|price|tarif|buchung|booking|agb|bedingung|terms|policy|polic)/i;
+function subpages(base,raw){
+  let h; try{h=new URL(base).hostname.replace(/^www\./,"")}catch(_){return []}
+  const out=new Set();
+  for(const m of raw.matchAll(/\[([^\]]{1,80})\]\((https?:\/\/[^)\s]+)\)/g)){
+    let u; try{u=new URL(m[2])}catch(_){continue}
+    if(u.hostname.replace(/^www\./,"")!==h||/\.(jpe?g|png|webp|gif|svg|pdf)$/i.test(u.pathname)||u.pathname==="/"||u.hash&&u.pathname===new URL(base).pathname)continue;
+    if(/datenschutz|privacy|impressum|imprint|login|kontakt|contact/i.test(u.pathname+m[1])&&!/agb|bedingung|terms/i.test(u.pathname+m[1]))continue;
+    if(SUB_RE.test(m[1]+" "+u.pathname)){u.hash="";out.add(u.href)}
+  }
+  return [...out].slice(0,6);
+}
+async function gatherRules(url){
+  const raw=await fetchPage(url); const subs=subpages(url,raw);
+  const more=await Promise.allSettled(subs.map(u=>fetchPage(u)));
+  return [raw,...more.filter(r=>r.status==="fulfilled").map(r=>r.value)].flatMap(extractRules);
+}
 function extractRules(raw){
   const md=raw.replace(/^(Title|URL Source|Markdown Content|Published Time):.*$/gm,"").replace(/!\[[^\]]*\]\([^)]*\)/g,"").replace(/\[([^\]]*)\]\([^)]*\)/g,"$1");
   const rows=md.split("\n").map(l=>({h:/^\s*#{1,5}\s/.test(l),t:l.replace(/^[\s#>*\-•|]+/,"").replace(/[*_|]+/g," ").replace(/\s+/g," ").trim()})).filter(r=>r.t.length>1);
@@ -907,7 +925,7 @@ function secRules(t){
 }
 async function fetchRulesInto(t){
   const urls=(t.links||[]); if(!urls.length)return "Keine Homepage hinterlegt.";
-  const res=await Promise.allSettled(urls.map(u=>fetchPage(u).then(extractRules)));
+  const res=await Promise.allSettled(urls.map(u=>gatherRules(u)));
   const got=res.filter(r=>r.status==="fulfilled").flatMap(r=>r.value);
   t.info=t.info||{}; const have=new Set(String(t.info.regeln||"").split("\n").map(x=>x.trim().toLowerCase()).filter(Boolean));
   const add=got.filter(x=>!have.has(x.toLowerCase())&&(have.add(x.toLowerCase()),true));
@@ -1250,7 +1268,7 @@ function tripDialog(t){
     if(!urls.length){$("fetchMsg").textContent="Bitte zuerst eine Homepage eingeben.";return}
     F("links").value=urls.join("\n");
     const b=$("fetchInfo"); b.disabled=true; $("fetchMsg").classList.remove("err"); $("fetchMsg").textContent=`Lese ${urls.length} Seite${urls.length>1?"n":""} …`;
-    const res=await Promise.allSettled(urls.map(u=>fetchPage(u).then(extractInfo)));
+    const res=await Promise.allSettled(urls.map(async u=>{const o=extractInfo(await fetchPage(u));try{const r=[...new Set(await gatherRules(u))];if(r.length)o.regeln=r.join("\n")}catch(_){}return o}));
     const ok=res.filter(r=>r.status==="fulfilled").map(r=>r.value), bad=urls.filter((u,i)=>res[i].status!=="fulfilled");
     const filled=[];
     const put=(name,val,label)=>{const el=F(name);if(!el||!val||el.value.trim())return;el.value=val;el.classList.add("fresh");filled.push(label)};
