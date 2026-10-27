@@ -461,6 +461,16 @@ details.more .hint{text-align:center}
 .db details.more[open]{align-items:flex-start}
 .db details.more .hint{text-align:left}
 .db details.more>summary{padding-left:0;font-size:.8rem}
+
+/* Wichtige Infos & Hausregeln */
+.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.rtile{background:var(--page);border-radius:18px;padding:20px 22px}
+.rtile h4{margin:0 0 8px;font-size:1.05rem;font-weight:600;letter-spacing:-.01em}
+.rtile ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px;font-size:.95rem;line-height:1.45}
+.rtile li::marker{color:var(--muted)}
+.rmsg{text-align:center}
+#sInfo .hint.keep{text-align:center}
+@media (max-width:760px){.gnav .jump a.j-top{display:none}}
 </style>
 </head>
 <body class="ro">
@@ -468,7 +478,7 @@ details.more .hint{text-align:center}
   <div class="gin">
     <a class="brand" href="/ferienhaus/" aria-label="Ferienhaus-Planer Startseite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7v8.5a1 1 0 0 1-1 1h-5v-6h-5v6h-5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span>Ferienhaus</span></a>
     <div class="jump" id="jump" hidden>
-      <a href="#top">Übersicht</a><a href="#sBelegung">Belegung</a><a href="#sPersonen">Personen</a><a href="#sKosten">Kosten</a><a href="#sAbrechnung">Abrechnung</a>
+      <a href="#top" class="j-top">Übersicht</a><a href="#sInfo">Infos</a><a href="#sBelegung">Belegung</a><a href="#sPersonen">Personen</a><a href="#sKosten">Kosten</a><a href="#sAbrechnung">Abrechnung</a>
     </div>
     <div class="tripsel">
       <select id="tripSel" aria-label="Ferien wählen"></select>
@@ -798,10 +808,38 @@ function extractInfo(raw){
   if(zugang.length)o.anfahrt=zugang.join("\n");
   const notes=[];if(preise.length)notes.push("Preise: "+preise.join(" · "));if(fakten.length)notes.push("Ausstattung: "+fakten.join(" · "));
   if(notes.length)o.notizen=notes.join("\n");
+  const rl=extractRules(raw); if(rl.length)o.regeln=rl.join("\n");
   return o;
   function norm(x){x=String(x).replace(".",":");return /:/.test(x)?x.padStart(5,"0"):x.padStart(2,"0")+":00"}
 }
-const INFO_FIELDS=[["adresse","Adresse"],["koordinaten","Haus – Koordinaten / Maps-Link"],["parkplatz","Parkplatz – Koordinaten / Maps-Link"],["checkin","Check-in"],["checkout","Check-out"],["maxGaeste","Max. Gäste"],["kontakt","Vermieter / Kontakt"],["telefon","Telefon"],["email","E-Mail"],["anfahrt","Anfahrt / Zugang"],["notizen","Notizen"],["beschreibung","Beschreibung"]];
+/* Wichtige Infos & Hausregeln aus dem Seitentext */
+const RULE_KW=/(hausregel|house rule|rauch|smok|nichtraucher|haustier|\bpets?\b|\bhunde?\b|\bdogs?\b|ruhezeit|nachtruhe|quiet|party|partys|feiern|lärm|noise|schlüssel|\bkeys?\b|abfall|müll|kehricht|waste|rubbish|garbage|recycl|bettwäsche|bed linen|handtücher|towels|\bstrom\b|no power|electric|trinkwasser|drinking water|heizung|heating|ofen|stove|brennholz|firewood|parkplatz|parking|zufahrt|accessible|4x4|allrad|schneeketten|snow chains|mindestaufenthalt|minimum stay|kaution|deposit|stornier|cancell|endreinigung|final cleaning|kurtaxe|tourist tax|check-?in|check-?out|anreise|abreise|wlan|wi-?fi|mobilfunk|reception|dusche|shower|toilette|toilet|grillieren|feuerstelle|fireplace|kinder willkommen|children welcome|dogs welcome|hunde willkommen)/i;
+const RULE_HEAD=/(hausregel|house rules|regeln|\brules\b|wichtig|important|gut zu wissen|good to know|hinweise|policies|richtlinien|bitte beachten|please note|booking information|buchungsinformation)/i;
+const RULE_SKIP=/(thank|danke|wonderful|wunderschön|wunderbar|amazing|traumhaft|toll\b|super\b|we had|wir hatten|again|wieder kommen|wiederkommen|recommend|empfehlen|review|bewertung|★|cookie|datenschutz|privacy|newsletter|anmelden|sign in|log in)/i;
+function extractRules(raw){
+  const md=raw.replace(/^(Title|URL Source|Markdown Content|Published Time):.*$/gm,"").replace(/!\[[^\]]*\]\([^)]*\)/g,"").replace(/\[([^\]]*)\]\([^)]*\)/g,"$1");
+  const rows=md.split("\n").map(l=>({h:/^\s*#{1,5}\s/.test(l),t:l.replace(/^[\s#>*\-•|]+/,"").replace(/[*_|]+/g," ").replace(/\s+/g," ").trim()})).filter(r=>r.t.length>1);
+  const out=[], seen=new Set();
+  const add=t=>{t=t.replace(/\s*[:·]\s*$/,"").trim(); const k=t.toLowerCase().replace(/[^a-zäöü0-9]/g,"");
+    if(t.length<8||t.length>220||RULE_SKIP.test(t)||seen.has(k))return; seen.add(k); out.push(t)};
+  for(let i=0;i<rows.length;i++){
+    if(rows[i].h&&RULE_HEAD.test(rows[i].t)){for(let j=i+1,n=0;j<rows.length&&!rows[j].h&&n<12;j++,n++)add(rows[j].t)}
+  }
+  for(const r of rows)if(!r.h&&r.t.length>=14&&RULE_KW.test(r.t))add(r.t);
+  return out.slice(0,16);
+}
+const RULE_CATS=[["Anreise & Abreise",/check|anreise|abreise|arrival|departure|schlüssel|\bkeys?\b|ankunft/i],["Zufahrt & Parken",/zufahrt|access|4x4|allrad|parkplatz|parking|schnee|snow|zu fuss|on foot|anfahrt/i],["Haustiere & Kinder",/hund|dog|haustier|\bpets?\b|kinder|children/i],["Ruhe & Rauchen",/ruhe|quiet|party|feier|lärm|noise|rauch|smok/i],["Abfall & Reinigung",/abfall|müll|kehricht|waste|rubbish|recycl|reinigung|cleaning|entsorg/i],["Kosten & Bedingungen",/kaution|deposit|storn|cancel|kurtaxe|tourist tax|mindest|minimum|chf|€|preis|price|bezahl|zahlung/i],["Ausstattung",/strom|power|wasser|water|heizung|heating|ofen|stove|holz|wood|dusche|shower|toilet|wlan|wi-?fi|internet|empfang|reception|bettwäsche|linen|handtücher|towel|grill|küche|kitchen|feuer|fire/i]];
+function groupRules(txt){
+  const g=new Map();
+  for(let l of String(txt||"").split("\n").map(x=>x.trim()).filter(Boolean)){
+    l=l.replace(/^[-•*]\s*/,"");
+    let cat=(RULE_CATS.find(([,re])=>re.test(l))||["Allgemein"])[0];
+    const m=l.match(/^([A-ZÄÖÜ][^:]{2,28}):\s+(.+)$/); if(m&&!/^\d/.test(m[2])&&!/check|uhr|\d:\d/i.test(m[1])){cat=m[1];l=m[2]}
+    if(!g.has(cat))g.set(cat,[]); g.get(cat).push(l);
+  }
+  return [...g];
+}
+const INFO_FIELDS=[["adresse","Adresse"],["koordinaten","Haus – Koordinaten / Maps-Link"],["parkplatz","Parkplatz – Koordinaten / Maps-Link"],["checkin","Check-in"],["checkout","Check-out"],["maxGaeste","Max. Gäste"],["kontakt","Vermieter / Kontakt"],["telefon","Telefon"],["email","E-Mail"],["anfahrt","Anfahrt / Zugang"],["notizen","Notizen"],["regeln","Wichtige Infos & Hausregeln (eine pro Zeile)"],["beschreibung","Beschreibung"]];
 
 /* ================= Rendering ================= */
 function render(){
@@ -848,12 +886,43 @@ function render(){
       const lo=Math.min(...o),hi=Math.max(...o),r=x=>chf(Math.round(x/100)*100).replace(/\.00$/,"");
       return lo===hi?`<span class="v">${r(lo)}<small>CHF</small></span>`:`<span class="v">${r(lo)}–${r(hi)}<small>CHF</small></span>`})()}</div>
   </div>
+  ${secRules(t)}
   ${secPlan(t)}
   ${secPeople(t,lg)}
   ${secCosts(t)}
   ${secSettle(t,lg)}`;
   decorate();
   wire(t);
+}
+
+function secRules(t){
+  const txt=(t.info||{}).regeln||"", groups=groupRules(txt), has=(t.links||[]).length;
+  if(!groups.length&&!token)return "";
+  return `<section class="section" id="sInfo">
+    <div class="shead"><h2>Wichtige Infos &amp; Hausregeln</h2><div class="tools edit">${has?`<button class="btn ghost sm" id="rulesFetch">Von Homepage holen</button>`:""}<button class="btn sm" id="rulesEdit">${groups.length?"Bearbeiten":"Erfassen"}</button></div></div>
+    ${groups.length?`<div class="rgrid">${groups.map(([c,ls])=>`<div class="rtile"><h4>${esc(c)}</h4><ul>${ls.map(l=>`<li>${esc(l)}</li>`).join("")}</ul></div>`).join("")}</div>`
+    :`<p class="hint keep">Noch keine Infos erfasst.${has?" «Von Homepage holen» liest Hausregeln und wichtige Hinweise automatisch aus.":" Homepage der Unterkunft unter «Ferien bearbeiten» eintragen, dann lassen sich die Infos automatisch holen."}</p>`}
+    <span class="rmsg toast" id="rulesMsg"></span>
+  </section>`;
+}
+async function fetchRulesInto(t){
+  const urls=(t.links||[]); if(!urls.length)return "Keine Homepage hinterlegt.";
+  const res=await Promise.allSettled(urls.map(u=>fetchPage(u).then(extractRules)));
+  const got=res.filter(r=>r.status==="fulfilled").flatMap(r=>r.value);
+  t.info=t.info||{}; const have=new Set(String(t.info.regeln||"").split("\n").map(x=>x.trim().toLowerCase()).filter(Boolean));
+  const add=got.filter(x=>!have.has(x.toLowerCase())&&(have.add(x.toLowerCase()),true));
+  if(add.length)t.info.regeln=[String(t.info.regeln||"").trim(),...add].filter(Boolean).join("\n");
+  const bad=urls.filter((u,i)=>res[i].status!=="fulfilled");
+  return (add.length?`${add.length} Punkt${add.length>1?"e":""} ergänzt – bitte prüfen.`:"Keine neuen Infos gefunden.")+(bad.length?` Nicht lesbar: ${bad.map(host).join(", ")}.`:"");
+}
+function rulesDialog(t){
+  openDlg("Wichtige Infos & Hausregeln",`
+    <label class="fl"><span>Eine Info pro Zeile. Optional mit Thema davor, z.B. «Abfall: Kehricht in die Sammelstelle beim Parkplatz»</span>
+    <textarea class="inp" name="rules" rows="14">${esc((t.info||{}).regeln||"")}</textarea></label>
+    ${(t.links||[]).length?`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button type="button" class="btn ghost sm" id="rdFetch">Von Homepage holen</button><span class="hint" id="rdMsg"></span></div>`:""}`,{
+    onSave(){t.info=t.info||{};const v=F("rules").value.split("\n").map(x=>x.trim()).filter(Boolean).join("\n");if(v)t.info.regeln=v;else delete t.info.regeln;commit()}});
+  if($("rdFetch"))$("rdFetch").onclick=async()=>{const b=$("rdFetch");b.disabled=true;$("rdMsg").textContent="Lese Homepage …";
+    const tmp={links:t.links,info:{regeln:F("rules").value}};const msg=await fetchRulesInto(tmp);F("rules").value=tmp.info.regeln||"";$("rdMsg").textContent=msg;b.disabled=false};
 }
 
 function secPlan(t){
@@ -993,11 +1062,11 @@ function secSettle(t,lg){
   // (Zahlungsvorschläge werden in wire() an die Buttons gebunden)
 }
 
-const LEADS={sBelegung:"Wer schläft wann wo.",sPersonen:"Alle, die dabei sind.",sKosten:"Was die Ferien kosten.",sAbrechnung:"Wer wem wie viel zahlt."};
+const LEADS={sInfo:"Gut zu wissen vor der Anreise.",sBelegung:"Wer schläft wann wo.",sPersonen:"Alle, die dabei sind.",sKosten:"Was die Ferien kosten.",sAbrechnung:"Wer wem wie viel zahlt."};
 function decorate(){
   for(const[id,txt]of Object.entries(LEADS)){const sec=$(id);if(!sec)continue;
     const h=sec.querySelector(".shead h2");if(h&&!sec.querySelector(".lead")){const p=document.createElement("p");p.className="lead";p.textContent=txt;h.after(p)}
-    if(id==="sPersonen"||id==="sAbrechnung")sec.classList.add("band")}
+    if(id==="sInfo"||id==="sPersonen"||id==="sAbrechnung")sec.classList.add("band")}
   const st=document.querySelector("#main .stats"); if(st)st.classList.add("hstats");
   for(const sec of document.querySelectorAll("#main .section"))collapseHints(sec,":scope > p.hint:not(.keep)");
 }
@@ -1053,6 +1122,8 @@ function wire(t){
     if(el.id==="addRoom")return tripDialog(t);
     if(el.id==="addStay")return stayDialog(t,null,{});
     if(el.id==="addPerson")return personDialog(t,null);
+    if(el.id==="rulesEdit")return rulesDialog(t);
+    if(el.id==="rulesFetch"){el.disabled=true;$("rulesMsg").textContent="Lese Homepage …";fetchRulesInto(t).then(m=>{commit();const x=$("rulesMsg");if(x)x.textContent=m});return}
     if(el.id==="feeBtn")return feeDialog(t);
     if(el.id==="addCost")return costDialog(t,null);
     if(el.id==="tgl5"){t.round5=t.round5===false;commit();return}
@@ -1103,7 +1174,7 @@ function tripDialog(t){
   const today=isoToday();
   const cur=t||{name:"",ort:"",start:addDays(today,30),end:addDays(today,37),rooms:[{id:uid(),name:"Zimmer 1",beds:2},{id:uid(),name:"Zimmer 2",beds:2}]};
   const rc0=t?rentCost(t):null;
-  const inf=cur.info||{}, area=k=>k==="anfahrt"||k==="notizen"||k==="beschreibung";
+  const inf=cur.info||{}, area=k=>k==="anfahrt"||k==="notizen"||k==="beschreibung"||k==="regeln";
   let rooms=cur.rooms.map(r=>({...r}));
   const roomRows=()=>rooms.map((r,i)=>`<div class="room"><input class="inp" data-rn="${i}" value="${esc(r.name)}" placeholder="Zimmername" aria-label="Zimmername"><input class="inp" data-rb="${i}" type="number" min="0" max="20" value="${r.beds}" aria-label="Schlafplätze" title="Schlafplätze"><button type="button" class="icon" data-rd="${i}" aria-label="Zimmer entfernen">−</button></div>`).join("");
   openDlg(isNew?"Neue Ferien":"Ferien bearbeiten",`
@@ -1186,6 +1257,8 @@ function tripDialog(t){
     for(const o of ok){
       put("name",o.name,"Name"); put("ort",o.ort,"Ort");
       for(const[k,l]of INFO_FIELDS){
+        if(k==="regeln"&&o.regeln&&F("i_regeln").value.trim()){const el=F("i_regeln"),have=new Set(el.value.split("\n").map(x=>x.trim().toLowerCase()));
+          const add=o.regeln.split("\n").filter(x=>!have.has(x.trim().toLowerCase()));if(add.length){el.value=el.value.replace(/\s*$/,"")+"\n"+add.join("\n");el.classList.add("fresh");filled.push(l)}continue}
         if(k==="notizen"&&o.notizen&&F("i_notizen").value.trim()&&!F("i_notizen").value.includes(o.notizen)&&F("i_notizen").classList.contains("fresh")){F("i_notizen").value+="\n"+o.notizen;continue}
         put("i_"+k,o[k],l);
       }

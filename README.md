@@ -13,6 +13,7 @@ Funktionen:
 - Kosten pauschal, pro Nacht, pro Woche, pro Person & Nacht (z.B. Kurtaxe)  oder als Staffelpreis pro Nacht (Grundpreis für X Personen, Zuschlag pro weitere Person)
 - Zuschläge pro Ferien (Kind pro Nacht, Hund pro Nacht, Hund pauschal) werden automatisch der Person belastet, die Kinder bzw. Hunde dabei hat (Anzahl bei der Person)
 - Aufteilung nach Nächten, gleichmässig, Anwesende am Datum (Einkauf) oder prozentual; Gewichtung pro Person (z.B. Kind ×0,5)
+- Abschnitt «Wichtige Infos & Hausregeln», automatisch aus den Homepages gelesen und nach Themen gruppiert
 - Abrechnung mit minimaler Anzahl Ausgleichszahlungen (auf 5 Rappen gerundet), bezahlte Ausgleiche erfassen, Zusammenfassung als Text kopieren
 
 Bearbeiten: pro Gerät einmal einen Fine-grained Token mit «Contents: Read and write» für dieses Repo eingeben. Ohne Token ist die Seite nur lesbar (Link kann an Mitreisende gehen).
