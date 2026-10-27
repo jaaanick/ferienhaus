@@ -843,7 +843,10 @@ function render(){
     <div class="stat"><span class="k">Aufenthalt</span><span class="v">${N}<small>Nächte</small></span></div>
     <div class="stat ${peak>beds?"over":""}"><span class="k">Personen / Plätze</span><span class="v">${t.people.length}<small>Pers.${(()=>{const k=t.people.reduce((a,p)=>a+kidsOf(p),0);return k?` + ${kidsTxt(k)}`:""})()} · max. ${peak}/${beds} Plätze</small></span></div>
     <div class="stat"><span class="k">Kosten total</span><span class="v">${chf(lg.total)}<small>CHF</small></span></div>
-    <div class="stat"><span class="k">Pro Person &amp; Nacht</span><span class="v">${(()=>{const pn=Object.values(lg.L).reduce((s,x)=>s+x.nights,0);return pn?chf(Math.round(lg.total/pn)):"–"})()}<small>CHF Ø</small></span></div>
+    <div class="stat"><span class="k">Anteil pro Person</span>${(()=>{const o=Object.values(lg.L).filter(x=>x.owed>0).map(x=>x.owed);
+      if(!o.length)return `<span class="v">–</span>`;
+      const lo=Math.min(...o),hi=Math.max(...o),r=x=>chf(Math.round(x/100)*100).replace(/\.00$/,"");
+      return lo===hi?`<span class="v">${r(lo)}<small>CHF</small></span>`:`<span class="v">${r(lo)}–${r(hi)}<small>CHF</small></span>`})()}</div>
   </div>
   ${secPlan(t)}
   ${secPeople(t,lg)}
