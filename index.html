@@ -147,6 +147,7 @@ td .meta{display:block;font-size:.76rem;color:var(--muted)}
 .box ol{padding-left:1.3em;display:flex;flex-direction:column;gap:3px}
 .box b{color:var(--ink)}
 .box.auth{border-color:var(--accent)}
+.viewnote{font-size:.8rem;color:var(--muted);text-align:center;padding-top:6px;border-top:1px solid var(--line)}
 .infobar{display:flex;flex-direction:column;gap:8px;margin-top:-10px}
 .iis{display:flex;flex-wrap:wrap;gap:6px}
 .ii{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:var(--ink);text-decoration:none;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 10px;max-width:100%;min-width:0}
@@ -236,6 +237,17 @@ dialog form{display:flex;flex-direction:column;max-height:calc(100dvh - 26px)}
   </header>
   <div class="infobar" id="infobar" hidden></div>
 
+
+  <div class="bar">
+    <nav class="jump" id="jump" hidden>
+      <a href="#sBelegung">Belegung</a><a href="#sPersonen">Personen</a><a href="#sKosten">Kosten</a><a href="#sAbrechnung">Abrechnung</a>
+    </nav>
+    <div class="status" id="status">Wird geladen …</div>
+  </div>
+
+  <div id="main"></div>
+
+  <div class="viewnote" id="viewNote" hidden>👁 Nur Ansicht · <button class="linkbtn" id="authOpen">Bearbeiten freischalten</button></div>
   <div class="box auth" id="auth" hidden>
     <p><b>Nur Ansicht.</b> Zum Bearbeiten auf diesem Gerät einmal einen GitHub-Token eingeben. Er bleibt nur in diesem Browser gespeichert.</p>
     <ol>
@@ -250,16 +262,6 @@ dialog form{display:flex;flex-direction:column;max-height:calc(100dvh - 26px)}
     </div>
     <div class="toast" id="tokMsg" role="status"></div>
   </div>
-
-  <div class="bar">
-    <nav class="jump" id="jump" hidden>
-      <a href="#sBelegung">Belegung</a><a href="#sPersonen">Personen</a><a href="#sKosten">Kosten</a><a href="#sAbrechnung">Abrechnung</a>
-    </nav>
-    <div class="status" id="status">Wird geladen …</div>
-  </div>
-
-  <div id="main"></div>
-
   <footer>
     <span id="who"></span>
     <button class="linkbtn" id="tokClear" hidden>Token auf diesem Gerät entfernen</button>
@@ -766,7 +768,7 @@ function wire(t){
   m.onclick=e=>{
     const el=e.target.closest("button,tr.click"); if(!el)return;
     if(el.id==="copySum")return copySummary(t);
-    if(!token){showAuth(true);return}
+    if(!token)return;                  // Ansicht: Klicks auf Tabelle/Plan tun nichts
     if(!loaded)return;
     if(el.id==="addRoom")return tripDialog(t);
     if(el.id==="addStay")return stayDialog(t,null,{});
@@ -1165,13 +1167,14 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 
 /* ================= Token ================= */
 function showAuth(show,msg){
-  $("auth").hidden=!show;$("tokMsg").textContent=msg||"";$("tokMsg").classList.toggle("err",!!msg);
-  if(show&&msg!==undefined){$("auth").scrollIntoView({block:"start",behavior:"smooth"})}
+  $("auth").hidden=!show;$("viewNote").hidden=show||!!token;
+  $("tokMsg").textContent=msg||"";$("tokMsg").classList.toggle("err",!!msg);
+  if(show){$("auth").scrollIntoView({block:"center",behavior:"smooth"});setTimeout(()=>{try{$("tok").focus({preventScroll:true})}catch(_){}},400)}
 }
 function updateWho(){
   document.body.classList.toggle("ro",!token);
   $("tokClear").hidden=!token;$("who").textContent=token?"Bearbeiten aktiv auf diesem Gerät.":"";
-  $("auth").hidden=!!token;
+  $("auth").hidden=true; $("viewNote").hidden=!!token;
 }
 async function canWrite(t){
   try{const r=await fetch(API,{headers:hdr(false,t),cache:"no-store"});if(!r.ok)return r.status;const j=await r.json();return j.permissions&&j.permissions.push?true:403}catch(_){return 0}
@@ -1184,6 +1187,7 @@ $("tokSave").onclick=async()=>{
   else{$("tokMsg").textContent=ok===401?"Token ungültig.":ok===403?"Token hat keine Schreibrechte auf ferienhaus.":"Kein Zugriff auf das Repository ("+(ok||"offline")+").";$("tokMsg").classList.add("err")}
   $("tokSave").disabled=false;
 };
+$("authOpen").onclick=()=>showAuth(true);
 $("tok").addEventListener("keydown",e=>{if(e.key==="Enter")$("tokSave").click()});
 $("tokClear").onclick=()=>{if(!confirm("Token auf diesem Gerät entfernen? Danach nur noch Ansicht."))return;token="";LS.del(TK);updateWho();render();setStatus("Nur Ansicht")};
 
